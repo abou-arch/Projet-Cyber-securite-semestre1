@@ -225,7 +225,7 @@ malware_family/
   prepare.py         sélection des familles et vectorisation → data/processed/
   dataset.py         load_dataset() pour scikit-learn, et vérification de l'installation
   ember_features.py  vectorisation EMBER2024 (2568 features) et noms des features
-plan/                répartition du travail : rôle A (données, modèles) et rôle B (importance, rapport)
+plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
 tests/               tests hors ligne sur des données synthétiques
 data/                (non versionné) raw/ = archives EMBER2024, processed/ = données préparées
 ```
