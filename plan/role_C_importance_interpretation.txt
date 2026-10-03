@@ -1,0 +1,186 @@
+================================================================================
+ PROJET : CLASSIFICATION DE FAMILLES DE MALWARES (EMBER2024, scikit-learn)
+ PLAN DE TRAVAIL - RÔLE C : IMPORTANCE DES FEATURES ET INTERPRÉTATION
+================================================================================
+
+Rôle A (données)      : ______________________________
+Rôle B (modèles)      : ______________________________
+Rôle C (toi)          : ______________________________
+Échéance du projet    : ____ / ____ / ________
+
+--------------------------------------------------------------------------------
+1. LE PROJET EN BREF
+--------------------------------------------------------------------------------
+But : prédire la famille d'un malware à partir de ses caractéristiques statiques
+(EMBER2024, 2568 features par fichier), puis expliquer quelles caractéristiques
+comptent le plus (analyse de l'importance des features).
+
+Déjà fait : l'installation du dataset (branche Abou, voir README.md).
+  python -m malware_family.download   archives Win32 vérifiées (SHA-256)
+  python -m malware_family.prepare    X et y prêts pour scikit-learn (10 familles)
+  python -m malware_family.dataset    vérification de l'installation
+
+Répartition des rôles :
+  Rôle A       : données, exploration, outils communs, coordination du rapport.
+  Rôle B       : modèles et évaluation des performances.
+  Rôle C (toi) : importance des features et interprétation.
+  Chacun rédige ses sections du rapport ; la soutenance se prépare à trois.
+
+--------------------------------------------------------------------------------
+2. CALENDRIER ET JALONS (commun aux trois rôles, à adapter à votre échéance)
+--------------------------------------------------------------------------------
+Semaine 1      Phase 0 : installation sur les trois machines.
+               Phase 1 : exploration (A), premiers modèles (B), features (C).
+Semaine 2      Phase 1 (suite).
+Semaines 3-4   Phase 2 : A prépare les variantes du jeu de données et le rapport ;
+               B optimise les modèles ; C mesure l'importance des features.
+Semaine 5      Phase 3 : B approfondit l'évaluation ; C interprète ; A assemble le rapport.
+Semaine 6      Phase 4 : rapport et soutenance, à trois.
+
+Jalons :
+  J1 (fin S1)  Mêmes données sur les trois machines ; dépôt organisé (A) ;
+               premier modèle transmis (B).
+  J2 (fin S2)  Exploration et outil hash_lookup terminés (A) ; premiers scores (B) ;
+               premier calcul d'importance (C).
+  J3 (fin S4)  Modèle final choisi (B) ; analyse d'importance complète (C) ;
+               première version du rapport assemblée (A).
+  J4 (fin S5)  Toutes les figures et tous les tableaux finaux.
+  J5 (S6)      Rapport relu par les trois ; soutenance répétée.
+
+Point d'équipe : 15 minutes, deux fois par semaine (fait, en cours, blocages).
+
+--------------------------------------------------------------------------------
+3. MES TÂCHES (RÔLE C)
+--------------------------------------------------------------------------------
+
+PHASE 0 - INSTALLATION (commune, 1 à 2 jours)
+[ ] Récupérer le code : git pull sur la branche Abou, créer et activer un venv,
+    puis pip install -r requirements.txt
+[ ] Lancer python -m pytest : tous les tests doivent passer.
+[ ] Préparer les données hors de tout dossier synchronisé (OneDrive, iCloud...),
+    avec exactement les mêmes commandes pour les trois (mêmes données partout) :
+      python -m malware_family.download --dest C:\ember2024\raw
+      python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10
+      python -m malware_family.dataset C:\ember2024\processed\Win32_top10
+    (macOS / Linux : mêmes commandes avec un dossier comme ~/ember2024)
+[ ] Comparer dataset_info.json entre les trois machines : mêmes familles,
+    mêmes effectifs.
+
+PHASE 1 - COMPRENDRE LES FEATURES ET PRÉPARER LES OUTILS (semaines 1-2)
+[ ] Lire le tableau « feature du sujet -> groupe EMBER2024 » du README, et
+    malware_family/ember_features.py (FEATURE_GROUPS, feature_names(),
+    feature_groups()).
+[ ] scripts/importance.py : écrire les fonctions de calcul (voir phase 2) et les
+    mettre au point dès J1 sur le modèle de base de B, avec un petit échantillon
+    (quelques milliers de lignes) pour aller vite.
+[ ] J2 : prendre en main scripts/hash_lookup.py de A, qui donne les vrais noms
+    (DLL, fonctions, sections) derrière les colonnes hachées (…_hashNN).
+
+PHASE 2 - IMPORTANCE DES FEATURES (semaines 3-4)
+[ ] Importance « MDI » du RandomForest (model.feature_importances_) : top 30, et
+    somme par groupe avec feature_groups().
+    Limite à signaler : le MDI favorise les features continues aux nombreuses valeurs.
+[ ] Importance par permutation sur la validation ou le test, avec le F1 macro :
+    - PAR GROUPE (12 groupes) : permuter toutes les colonnes d'un groupe en même
+      temps, recalculer le F1 macro et comparer au score d'origine. Petite boucle
+      maison : permutation_importance de scikit-learn ne sait pas regrouper des
+      colonnes. Cela répond directement au sujet : imports, taille, sections,
+      chaînes ou fréquence des octets, qu'est-ce qui compte le plus ?
+    - Feature par feature (sklearn.inspection.permutation_importance,
+      scoring="f1_macro", n_repeats=5) seulement pour les ~50 meilleures features
+      du MDI : sur les 2568 colonnes, ce serait beaucoup trop long.
+[ ] Ablation, avec les paramètres de modèle de B (HistGradientBoosting, plus rapide) :
+    réentraîner avec UN seul groupe, puis avec tous les groupes SAUF un
+    -> tableau des F1 macro.
+[ ] Traduire les colonnes hachées importantes en noms réels (hash_lookup.py de A).
+[ ] Importance par famille : pour chaque famille, permutation par groupe en
+    « une famille contre les autres », ou profil moyen des features clés.
+[ ] J3 : relancer tous les calculs sur le modèle final de B ; enregistrer
+    results/importances.csv et les figures (results/figures/C_*.png).
+[ ] Transmettre à B les groupes et features les plus importants
+    (il testera un modèle réduit).
+
+PHASE 3 - INTERPRÉTATION ET LIMITES (semaine 5)
+[ ] Relier les features importantes à ce que l'on sait des familles (descriptions
+    publiques : Malpedia, rapports d'éditeurs de sécurité), par exemple :
+    entropie élevée et packing, imports réseau ou de chiffrement, signature
+    absente. Sans jamais télécharger d'échantillon.
+[ ] Expliquer avec B les confusions de sa matrice de confusion.
+[ ] Limites à discuter :
+    - hashing : plusieurs noms partagent une même colonne ;
+    - features corrélées : la permutation sous-estime leur importance ;
+    - étiquettes bruitées (ClarAVy ; « familles » génériques comme wacatac) ;
+    - dérive temporelle ; familles absentes du top 10 ;
+    - plafond de 10 000 échantillons par famille.
+
+PHASE 4 - RAPPORT ET SOUTENANCE (semaine 6)
+[ ] Rédiger mes sections : Importance des features, Discussion et limites
+    (avec B) ; transmettre à A pour l'intégration.
+[ ] Relire les sections de A (B relit les miennes).
+[ ] Diapositives : importance des features et limites ; répéter à trois.
+
+--------------------------------------------------------------------------------
+4. ÉCHANGES ENTRE LES RÔLES (commun)
+--------------------------------------------------------------------------------
+A -> B, C  J1     Dépôt organisé, conventions (dossiers, noms de fichiers, figures).
+A -> B     S1-S2  Constats de l'exploration : déséquilibre, features constantes.
+A -> C     J2     scripts/hash_lookup.py (noms réels derrière les colonnes hachées).
+A -> B, C  S3     Commandes des variantes du jeu de données.
+B -> C     J1     scripts/train.py : modèle de base reproductible (random_state fixé).
+B -> C     J3     Modèle final (paramètres + script) et results/predictions_test.csv.
+C -> B     S4-S5  Groupes et features les plus importants (modèle réduit possible).
+C -> B     S5     Explications des confusions entre familles.
+B, C -> A  S5     Sections du rapport et figures finales, pour l'intégration.
+Les fichiers .joblib ne passent pas par git : on régénère le modèle avec le
+script de B (random_state fixé), ou on l'échange par clé USB ou par le cloud.
+
+--------------------------------------------------------------------------------
+5. ORGANISATION DU DÉPÔT ET RÈGLES GIT (commun)
+--------------------------------------------------------------------------------
+notebooks/        01_exploration, 02_features (A) ; 03_modeles (B) ; 04_importance (C)
+scripts/          hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
+results/          metrics.json, predictions_test.csv (B) ; importances.csv (C)
+results/figures/  figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
+models/           modèles .joblib (NON versionnés)
+rapport/          rapport et diapositives (A assemble ; chacun écrit ses sections)
+
+Règles :
+  - une branche par personne ; une Pull Request vers main à chaque jalon, relue
+    par un autre membre (A relit B, B relit C, C relit A) ;
+  - chacun modifie SES fichiers (liste ci-dessus) : pas de conflits git ;
+  - jamais de données, de modèles ni de .venv dans git ;
+  - vider les sorties trop lourdes des notebooks avant de commiter.
+
+--------------------------------------------------------------------------------
+6. SÉCURITÉ (commun)
+--------------------------------------------------------------------------------
+  - On travaille UNIQUEMENT sur les features extraites d'EMBER2024.
+  - Ne jamais télécharger ni exécuter un binaire à partir de son sha256.
+  - Ne pas utiliser le jeu EMBER2024-capa (code malveillant désassemblé).
+  - Données hors des dossiers synchronisés (OneDrive, iCloud...) et hors de git.
+
+--------------------------------------------------------------------------------
+7. RÉPARTITION DU RAPPORT (commun)
+--------------------------------------------------------------------------------
+  Introduction et contexte ............................ A
+  Données et préparation .............................. A
+  Features (ce que mesurent les 2568 colonnes) ........ A
+  Méthodologie (modèles, validation, métriques) ....... B
+  Résultats (scores, confusions, dérive temporelle) ... B
+  Importance des features ............................. C
+  Discussion et limites ............................... C (avec B)
+  Éthique et sécurité ................................. A
+  Conclusion .......................................... A, B et C
+  Intégration, mise en forme, bibliographie ........... A
+  Soutenance : chacun présente sa partie ; A coordonne les diapositives.
+
+--------------------------------------------------------------------------------
+8. RÉFÉRENCES UTILES
+--------------------------------------------------------------------------------
+  - R. J. Joyce et al., « EMBER2024 - A Benchmark Dataset for Holistic Evaluation
+    of Malware Classifiers », KDD 2025. arXiv:2506.05074
+  - Code et documentation d'EMBER2024 : https://github.com/FutureComputing4AI/EMBER2024
+  - ClarAVy (étiquettes de famille) : https://github.com/FutureComputing4AI/ClarAVy
+  - scikit-learn, importance par permutation :
+    https://scikit-learn.org/stable/modules/permutation_importance.html
+  - L. Breiman, « Random Forests », Machine Learning, 2001.
