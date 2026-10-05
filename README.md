@@ -13,6 +13,9 @@ caractéristiques statiques **déjà extraites**, sans jamais exécuter ni manip
 
 Ce document explique comment **installer le dataset** et le préparer pour scikit-learn.
 
+**Débutants :** commencez par [GUIDE_DEBUTANT.txt](GUIDE_DEBUTANT.txt). Il explique le projet
+simplement, donne les commandes pour Windows et macOS, et contient un glossaire.
+
 ---
 
 ## 1. Le dataset EMBER2024
@@ -226,6 +229,7 @@ malware_family/
   dataset.py         load_dataset() pour scikit-learn, et vérification de l'installation
   ember_features.py  vectorisation EMBER2024 (2568 features) et noms des features
 plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
+GUIDE_DEBUTANT.txt   explications pour débutants, commandes Windows et macOS, glossaire
 tests/               tests hors ligne sur des données synthétiques
 data/                (non versionné) raw/ = archives EMBER2024, processed/ = données préparées
 ```

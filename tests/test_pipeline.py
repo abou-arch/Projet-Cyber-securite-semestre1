@@ -213,6 +213,16 @@ def test_prepare_filters_confidence_and_caps_families(tmp_path, fake_ember):
     assert list(data.meta_train.sha256) == list(runs[1].meta_train.sha256)  # tirage reproductible
 
 
+def test_tilde_paths_are_expanded(tmp_path, fake_ember, monkeypatch):
+    # Entre guillemets, « ~ » n'est pas remplacé par le terminal : nos scripts le font.
+    for variable in ("HOME", "USERPROFILE"):
+        monkeypatch.setenv(variable, str(tmp_path))
+    prepare.main(["--data-dir", "~/hub", "--out-dir", "~/out", "--file-types", "Win32",
+                  "--top-families", "2", "--jobs", "1"])
+    assert (tmp_path / "out" / "dataset_info.json").is_file()
+    assert len(load_dataset("~/out").families) == 2
+
+
 def test_prepare_requires_downloaded_archives(tmp_path):
     with pytest.raises(SystemExit, match="introuvables"):
         prepare.main(["--data-dir", str(tmp_path / "absent"), "--out-dir", str(tmp_path / "out")])
