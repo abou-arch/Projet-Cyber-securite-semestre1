@@ -188,7 +188,90 @@ Pour l'analyse d'importance, `data.feature_names[j]` donne le nom de la colonne 
 `CATEGORICAL_FEATURES` liste les colonnes qui sont des codes et non des quantités : type de
 machine, sous-système, premiers octets.
 
-## 6. Sécurité
+## 6. Exploration et outils communs
+
+### 6.1 Notebooks d'exploration
+
+```bash
+jupyter lab notebooks/01_exploration.ipynb
+```
+
+- `01_exploration.ipynb` : effectifs par famille, échantillons par semaine, confiance des
+  étiquettes, features constantes (liste écrite dans `results/` pour l'équipe modèles),
+  malwares du test d'autres familles.
+- `02_features.ipynb` : ce que mesurent les 2568 colonnes, puis comparaison des familles sur
+  12 features lisibles (boîtes à moustaches).
+
+Les notebooks lisent `data/processed/ember2024_Win32_top10`. Si tes données sont ailleurs,
+indique leur dossier dans la variable d'environnement `EMBER_DATASET` avant de lancer Jupyter :
+
+```bash
+set EMBER_DATASET=C:\ember2024\processed\Win32_top10        # Windows (cmd)
+$env:EMBER_DATASET = "C:\ember2024\processed\Win32_top10"   # Windows (PowerShell)
+export EMBER_DATASET=~/ember2024/processed/Win32_top10       # macOS / Linux
+```
+
+Avant de commiter un notebook, vide ses sorties (*Kernel → Restart Kernel and Clear Outputs*) :
+les figures sont déjà enregistrées dans `results/figures/`.
+
+### 6.2 Noms réels derrière les colonnes hachées
+
+Une colonne `…_hashNN` regroupe plusieurs noms (§ 1). `scripts/hash_lookup.py` les retrouve,
+avec la même formule que scikit-learn : `abs(murmurhash3_32(texte, seed=0)) % n`.
+
+```bash
+# Colonne d'un nom, sans données
+python -m scripts.hash_lookup colonne imports_function "KERNEL32.dll:VirtualAlloc"
+#   imports_function_hash0581  (signe +1)  <- kernel32.dll:VirtualAlloc
+
+# Index des noms présents dans le jeu préparé (relit une fois les archives du train)
+python -m scripts.hash_lookup index data/processed/ember2024_Win32_top10
+
+# Tous les noms derrière des colonnes : nombre d'échantillons, signe, familles principales
+python -m scripts.hash_lookup noms imports_function_hash0581 section_size_hash41
+```
+
+| Colonnes                                    | Texte haché                                         | Cases |
+|---------------------------------------------|-----------------------------------------------------|------:|
+| `imports_library_hashNNN`                   | bibliothèque en minuscules : `kernel32.dll`         |   256 |
+| `imports_function_hashNNNN`                 | `bibliothèque:fonction` : `kernel32.dll:VirtualAlloc` | 1024 |
+| `section_size/vsize/entropy_hashNN`         | nom de section : `.text`                            |    50 |
+| `section_props_hashNN`                      | `section:droit` : `.text:MEM_EXECUTE`               |    50 |
+| `section_entry_name_hashN`                  | section du point d'entrée                           |    10 |
+| `exports_function_hashNNN`                  | fonction exportée : `DllMain`                       |   128 |
+| `richheader_hashNN`                         | comp.id du Rich header (produit et build du compilateur) | 32 |
+
+- L'index `hash_lookup.csv` est écrit dans le dossier du jeu préparé, donc hors de git :
+  chacun le génère chez soi. `--data-dir` indique les archives si elles ont changé de dossier.
+- Pour les sections, les exports et le Rich header, scikit-learn ajoute la valeur d'un nom
+  avec le **signe** de son hash : un nom de signe -1 rend la colonne négative.
+- Dans un notebook :
+
+  ```python
+  from scripts.hash_lookup import load_index, names_for, readable_name
+
+  index = load_index("data/processed/ember2024_Win32_top10")
+  names_for("imports_function_hash0581", index)       # tableau de tous les noms de la case
+  readable_name("imports_function_hash0581", index)   # libellé court pour une figure
+  ```
+
+### 6.3 Conventions pour les figures et les fichiers
+
+```python
+from malware_family.figures import family_colors, new_figure, save_figure
+
+fig, ax = new_figure()                          # 16 x 9 cm, police 10 pt
+colors = family_colors(data.families)           # une couleur fixe par famille
+save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_confusion.png
+```
+
+- Une figure = un PNG dans `results/figures/`, préfixé par le rôle (`A_`, `B_`, `C_`), en
+  minuscules, sans espace ni accent. `save_figure` refuse les autres noms.
+- Largeur 16 cm (pleine page) ou 8 cm (demi-page, `HALF_WIDTH`), 200 dpi, police 10 pt.
+- Une couleur par famille (`family_colors`), la même dans toutes les figures du rapport.
+- Titres et axes en français, unités entre parenthèses : « Taille (octets) ».
+
+## 7. Sécurité
 
 - EMBER2024 ne contient **que des caractéristiques extraites**. Aucun code malveillant n'est
   téléchargé, stocké ou exécuté.
@@ -199,7 +282,7 @@ machine, sous-système, premiers octets.
   correspondants depuis une plateforme d'analyse de malwares.
 - Le dossier `data/` est exclu de git (`.gitignore`) : ne versionne jamais les données.
 
-## 7. Dépannage
+## 8. Dépannage
 
 | Problème | Solution |
 |----------|----------|
@@ -220,7 +303,7 @@ machine, sous-système, premiers octets.
 `malware_family/ember_features.py` reproduit exactement sa vectorisation, sans ces
 dépendances. Les tests vérifient qu'elle donne des vecteurs identiques au bit près.
 
-## 8. Structure du dépôt
+## 9. Structure du dépôt
 
 ```
 malware_family/
@@ -228,11 +311,21 @@ malware_family/
   prepare.py         sélection des familles et vectorisation → data/processed/
   dataset.py         load_dataset() pour scikit-learn, et vérification de l'installation
   ember_features.py  vectorisation EMBER2024 (2568 features) et noms des features
+  figures.py         conventions communes pour les figures du rapport
+notebooks/           01_exploration, 02_features (A) ; 03_modeles (B) ; 04_importance (C)
+scripts/             hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
+results/             métriques, prédictions, importances, listes de features
+  figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
+rapport/             rapport et diapositives
 plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
 GUIDE_DEBUTANT.txt   explications pour débutants, commandes Windows et macOS, glossaire
 tests/               tests hors ligne sur des données synthétiques
 data/                (non versionné) raw/ = archives EMBER2024, processed/ = données préparées
+models/              (non versionné) modèles entraînés .joblib
 ```
+
+Chacun ne modifie que ses fichiers (voir `plan/`) : pas de conflit git. Jamais de données,
+de modèles ni de `.venv` dans git.
 
 ## Références
 
