@@ -138,7 +138,7 @@ vectorise ensuite ces échantillons dans `data/processed/ember2024_Win32_top10/`
 | `y_train.npy`, `y_test.npy`       | indice de la famille de chaque ligne                        |
 | `families.txt`                    | nom de la famille pour chaque indice (ligne `i` ↔ `y = i`)  |
 | `feature_names.txt`               | nom des 2568 colonnes                                       |
-| `meta_train.csv`, `meta_test.csv` | `sha256`, date de première soumission, type, famille et confiance de chaque ligne |
+| `meta_train.csv`, `meta_test.csv` | `sha256`, date de première soumission, type, famille, confiance et position dans les archives de chaque ligne |
 | `family_counts.csv`               | effectifs de **toutes** les familles, train et test         |
 | `dataset_info.json`               | paramètres et statistiques, pour le rapport                 |
 
@@ -155,6 +155,12 @@ Options utiles :
 
 Les malwares du test qui appartiennent à d'autres familles sont écartés. Leur nombre est
 indiqué dans `dataset_info.json`.
+
+Les archives d'EMBER2024 répètent des lignes : chaque fichier (`sha256`) n'est gardé qu'une
+fois, et un fichier du test déjà présent dans le train est écarté (sinon le modèle serait
+évalué sur des fichiers qu'il a appris). Le nombre de lignes en double est aussi indiqué dans
+`dataset_info.json`. Un jeu préparé avant cette correction est refusé par `load_dataset` :
+relance alors `prepare` avec la même commande.
 
 ### 4.4 Vérifier l'installation
 
