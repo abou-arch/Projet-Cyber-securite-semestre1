@@ -33,7 +33,8 @@ def _rebuild_hashed_columns(raw):
     for prefix, group in hash_lookup.HASHED_GROUPS.items():
         for text, value in group.values(raw):
             index, sign = hash_lookup.bucket(text, group.n_features)
-            vector[names[hash_lookup.column_name(prefix, index)]] += value * (sign if group.alternate_sign else 1)
+            column = names[hash_lookup.column_name(prefix, index)]
+            vector[column] += value * (sign if group.alternate_sign else 1)
     return vector.astype(np.float32)
 
 
@@ -56,12 +57,12 @@ def test_column_for_normalizes_library_names():
 
 
 def _write_archives(directory, samples):
-    """Archives Win32_train.zip et Win32_test.zip (un seul fichier JSONL chacune)."""
+    """Archives Win32_train.zip et Win32_test.zip ; chaque ligne y figure deux fois, comme dans EMBER2024."""
     directory.mkdir()
     cut = int(len(samples) * 0.8)
     for split, part in (("train", samples[:cut]), ("test", samples[cut:])):
         with zipfile.ZipFile(directory / f"Win32_{split}.zip", "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("all.jsonl", "".join(json.dumps(s) + "\n" for s in part))
+            archive.writestr("all.jsonl", "".join(2 * (json.dumps(s) + "\n") for s in part))
     return {"train": samples[:cut], "test": samples[cut:]}
 
 
@@ -72,14 +73,15 @@ def test_index_lists_every_name_of_the_prepared_dataset(tmp_path, jobs, capsys):
     prepare.main(["--data-dir", str(tmp_path / "raw"), "--out-dir", str(dataset), "--top-families", "3",
                   "--max-per-family", "30", "--jobs", "1"])
     hash_lookup.main(["index", str(dataset), "--jobs", str(jobs)])
-    assert "Attention" not in capsys.readouterr().out
-
     meta = pd.read_csv(dataset / "meta_train.csv", dtype=str)
+    assert f"{len(meta)} échantillons (train)" in capsys.readouterr().out  # doublons comptés une fois
+
     kept = [s for s in splits["train"] if s["sha256"] in set(meta.sha256)]  # échantillons de X_train
     expected = Counter()
     for sample in kept:
         for prefix, texts in hash_lookup.hashed_texts(sample).items():
-            expected.update((hash_lookup.column_for(prefix, text)[0], text, sample["family"]) for text in texts)
+            expected.update((hash_lookup.column_for(prefix, text)[0], text, sample["family"])
+                            for text in texts)
 
     index = hash_lookup.load_index(dataset)
     families = (dataset / "families.txt").read_text(encoding="utf-8").splitlines()
@@ -102,6 +104,16 @@ def test_index_lists_every_name_of_the_prepared_dataset(tmp_path, jobs, capsys):
     assert f"{column} : {len(names)} nom(s)" in out
     assert "kernel32.dll:VirtualAlloc" in out
     assert "general_size : pas une colonne hachée" in out
+
+
+def test_index_requires_sample_positions(tmp_path):
+    _write_archives(tmp_path / "raw", make_samples(100, seed=8))
+    dataset = tmp_path / "processed"
+    prepare.main(["--data-dir", str(tmp_path / "raw"), "--out-dir", str(dataset), "--jobs", "1"])
+    meta = pd.read_csv(dataset / "meta_train.csv")
+    meta.drop(columns=["archive", "member", "line"]).to_csv(dataset / "meta_train.csv", index=False)
+    with pytest.raises(SystemExit, match="ancienne version"):
+        hash_lookup.main(["index", str(dataset), "--jobs", "1"])
 
 
 def test_lookup_requires_an_index(tmp_path):

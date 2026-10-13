@@ -158,77 +158,67 @@ def hashed_texts(raw):
             for prefix, group in HASHED_GROUPS.items()}
 
 
-_SHA256_RE = re.compile(rb'"sha256"\s*:\s*"([0-9a-fA-F]{64})"')
-_family_of = {}  # sha256 -> famille des échantillons du jeu préparé, partagé avec les processus
-
-
-def _set_families(family_of):
-    global _family_of
-    _family_of = family_of
-
-
 def _index_member(task):
-    """Textes hachés des échantillons du jeu préparé présents dans un fichier JSONL."""
-    zip_path, member = task
-    counts, found = defaultdict(Counter), 0
+    """Textes hachés des lignes voulues d'un fichier JSONL : [(n° de ligne, sha256, famille)], triées."""
+    zip_path, member, wanted = task
+    counts = defaultdict(Counter)  # (préfixe, texte) -> effectif par famille
+    targets = iter(wanted)
+    target = next(targets)
     with zipfile.ZipFile(zip_path) as archive, _open_lines(archive, member) as lines:
-        size = archive.getinfo(member).file_size
-        for line in lines:
-            match = _SHA256_RE.search(line)
-            if not match or match.group(1).decode() not in _family_of:
+        for line_no, line in enumerate(lines):
+            if line_no < target[0]:
                 continue  # on ne décode que les lignes du jeu préparé
             raw = json.loads(line)
-            family = _family_of.get(raw["sha256"])
-            if family is None:
-                continue
-            found += 1
+            if raw["sha256"] != target[1]:
+                raise RuntimeError(f"{zip_path.name}/{member} a changé depuis prepare (ligne {line_no})")
             for prefix, texts in hashed_texts(raw).items():
                 for text in texts:
-                    counts[prefix, text][family] += 1
-    return size, found, counts
+                    counts[prefix, text][target[2]] += 1
+            target = next(targets, None)
+            if target is None:
+                break
+    if target is not None:
+        raise RuntimeError(f"{zip_path.name}/{member} est plus court que lors de prepare")
+    return len(wanted), counts
 
 
 def build_index(dataset, data_dir=None, splits=("train",), jobs=1):
     """Pour chaque nom haché, nombre d'échantillons du jeu préparé qui le contiennent, par famille.
 
-    Renvoie (familles, lignes [colonne, texte, signe, n_samples, effectif par famille...],
-    échantillons trouvés, échantillons attendus).
+    Chaque échantillon est relu à la position notée par prepare (colonnes archive, member et line
+    de meta_*.csv). Renvoie (familles, lignes [colonne, texte, signe, n_samples, effectif par
+    famille...], nombre d'échantillons lus).
     """
     dataset = Path(dataset)
     info = json.loads((dataset / "dataset_info.json").read_text(encoding="utf-8"))
     families = (dataset / "families.txt").read_text(encoding="utf-8").splitlines()
-    data_dir = Path(data_dir or info["source"])
-    family_of, tasks, total = {}, [], 0
+    data_dir = Path(data_dir or info["source"]).expanduser()
+    by_member = defaultdict(list)
     for split in splits:
-        meta = pd.read_csv(dataset / f"meta_{split}.csv", usecols=["sha256", "family"], dtype=str,
-                           keep_default_na=False)
-        family_of.update(zip(meta.sha256, meta.family))
-        for name in info["archives"]:
-            if not name.endswith(f"_{split}.zip"):
-                continue
-            path = data_dir / name
-            if not path.is_file():
-                raise SystemExit(f"Archive introuvable : {path}\n"
-                                 "Indiquez le dossier des archives EMBER2024 avec --data-dir.")
-            with zipfile.ZipFile(path) as archive:
-                members = sorted((m for m in archive.infolist() if m.filename.endswith(".jsonl")),
-                                 key=lambda m: m.filename)
-            tasks += [(path, member.filename) for member in members]
-            total += sum(member.file_size for member in members)
+        meta = pd.read_csv(dataset / f"meta_{split}.csv", dtype=str, keep_default_na=False)
+        if not {"archive", "member", "line"} <= set(meta.columns):
+            raise SystemExit(f"{dataset} a été préparé par une ancienne version de prepare : relancez "
+                             "« python -m malware_family.prepare » (même commande, même --out-dir).")
+        for row in meta.itertuples():
+            by_member[row.archive, row.member].append((int(row.line), row.sha256, row.family))
+    tasks = []
+    for (archive_name, member), wanted in sorted(by_member.items()):
+        path = data_dir / archive_name
+        if not path.is_file():
+            raise SystemExit(f"Archive introuvable : {path}\n"
+                             "Indiquez le dossier des archives EMBER2024 avec --data-dir.")
+        tasks.append((path, member, sorted(wanted)))
 
-    counts, found = defaultdict(Counter), 0
+    counts, n_samples = defaultdict(Counter), 0
     context = multiprocessing.get_context("spawn")  # comme prepare : même comportement partout
-    with (context.Pool(jobs, initializer=_set_families, initargs=(family_of,)) if jobs > 1
-          else nullcontext()) as pool:
-        if pool is None:
-            _set_families(family_of)
+    with context.Pool(jobs) if jobs > 1 else nullcontext() as pool:
         results = pool.imap_unordered(_index_member, tasks) if pool else map(_index_member, tasks)
-        with tqdm(total=total, unit="B", unit_scale=True, desc="Lecture des archives") as bar:
-            for size, n_found, member_counts in results:
-                found += n_found
+        with tqdm(total=sum(len(task[2]) for task in tasks), unit="éch", desc="Lecture des archives") as bar:
+            for n_read, member_counts in results:
+                n_samples += n_read
                 for key, by_family in member_counts.items():
                     counts[key].update(by_family)
-                bar.update(size)
+                bar.update(n_read)
 
     order = {name: j for j, name in enumerate(feature_names())}
     rows = []
@@ -236,12 +226,12 @@ def build_index(dataset, data_dir=None, splits=("train",), jobs=1):
         column, sign = column_for(prefix, text)
         rows.append([column, text, sign, sum(by_family.values()), *(by_family[f] for f in families)])
     rows.sort(key=lambda row: (order[row[0]], -row[3], row[1]))
-    return families, rows, found, len(family_of)
+    return families, rows, n_samples
 
 
 def load_index(path=DEFAULT_PATH):
     """Index écrit par la commande ``index`` ; ``path`` : jeu préparé ou fichier CSV."""
-    path = Path(path)
+    path = Path(path).expanduser()
     if path.is_dir():
         path = path / INDEX_NAME
     if not path.is_file():
@@ -263,7 +253,7 @@ def _display(text):
 
 
 def readable_name(column, index, max_names=2):
-    """Libellé d'une colonne pour une figure, ex. « imports_function_hash0123 (kernel32.dll:Sleep, +4) »."""
+    """Libellé court pour une figure, ex. « imports_function_hash0123 (kernel32.dll:Sleep, +4) »."""
     if parse_column(column) is None:
         return column
     names = names_for(column, index)
@@ -319,20 +309,19 @@ def main(argv=None):
             print(f"{column}  (signe {sign:+d})  <- {_display(normalize(args.prefix, text))}")
 
     elif args.command == "index":
+        args.dataset = args.dataset.expanduser()
         if not (args.dataset / "dataset_info.json").is_file():
             raise SystemExit(f"Pas de jeu préparé dans {args.dataset} : "
                              "lancez « python -m malware_family.prepare ».")
-        families, rows, found, expected = build_index(args.dataset, args.data_dir, args.splits, args.jobs)
+        families, rows, n_samples = build_index(args.dataset, args.data_dir, args.splits, args.jobs)
         out = args.out or args.dataset / INDEX_NAME
         out.parent.mkdir(parents=True, exist_ok=True)
         with open(out, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["column", "text", "sign", "n_samples", *families])
             writer.writerows(rows)
-        if found != expected:
-            print(f"Attention : {found} échantillons retrouvés dans les archives sur {expected}.")
         print(f"{len(rows)} noms, {len({row[0] for row in rows})} colonnes hachées, "
-              f"{found} échantillons ({' + '.join(args.splits)}) -> {out}")
+              f"{n_samples} échantillons ({' + '.join(args.splits)}) -> {out}")
 
     else:
         try:
