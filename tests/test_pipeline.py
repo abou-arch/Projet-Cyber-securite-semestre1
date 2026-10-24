@@ -268,3 +268,23 @@ def test_load_dataset_rejects_duplicated_samples(tmp_path, fake_ember):
     (out / "meta_test.csv").write_text("\n".join(meta[:-1] + [meta[1]]) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="en double"):
         load_dataset(out)
+
+
+def test_find_dataset_uses_variable_then_standard_folders(tmp_path, fake_ember, monkeypatch):
+    from malware_family.dataset import find_dataset
+
+    remote, _, _ = fake_ember
+    home, project = tmp_path / "home", tmp_path / "projet"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("EMBER_DATASET", raising=False)
+    with pytest.raises(FileNotFoundError, match="EMBER_DATASET"):
+        find_dataset(project)
+    in_home = home / "ember2024" / "processed" / "Win32_top10"
+    prepare.main(["--data-dir", str(remote), "--out-dir", str(in_home), "--file-types", "Win32",
+                  "--jobs", "1"])
+    assert find_dataset(project) == in_home
+    in_project = project / "data" / "processed" / "ember2024_Win32_top10"
+    shutil.copytree(in_home, in_project)
+    assert find_dataset(project) == in_project  # le dossier du projet passe en premier
+    monkeypatch.setenv("EMBER_DATASET", "~/ailleurs")
+    assert find_dataset(project) == home / "ailleurs"  # la variable passe avant tout
