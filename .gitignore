@@ -1,6 +1,12 @@
 # Données EMBER (plusieurs Go) : jamais dans git
 /data/
 
+# Modèles entraînés (.joblib) : régénérés avec le script de B, ou échangés hors de git
+/models/
+
+# Rapport assemblé par pandoc : on le régénère
+/rapport/rapport.*
+
 # Python
 __pycache__/
 *.py[cod]

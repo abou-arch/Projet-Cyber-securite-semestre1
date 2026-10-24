@@ -213,6 +213,78 @@ def test_prepare_filters_confidence_and_caps_families(tmp_path, fake_ember):
     assert list(data.meta_train.sha256) == list(runs[1].meta_train.sha256)  # tirage reproductible
 
 
+def test_tilde_paths_are_expanded(tmp_path, fake_ember, monkeypatch):
+    # Entre guillemets, « ~ » n'est pas remplacé par le terminal : nos scripts le font.
+    for variable in ("HOME", "USERPROFILE"):
+        monkeypatch.setenv(variable, str(tmp_path))
+    prepare.main(["--data-dir", "~/hub", "--out-dir", "~/out", "--file-types", "Win32",
+                  "--top-families", "2", "--jobs", "1"])
+    assert (tmp_path / "out" / "dataset_info.json").is_file()
+    assert len(load_dataset("~/out").families) == 2
+
+
 def test_prepare_requires_downloaded_archives(tmp_path):
     with pytest.raises(SystemExit, match="introuvables"):
         prepare.main(["--data-dir", str(tmp_path / "absent"), "--out-dir", str(tmp_path / "out")])
+
+
+def test_prepare_keeps_each_file_once_and_removes_train_files_from_test(tmp_path, fake_ember):
+    _, samples, _ = fake_ember
+    train = samples["Win32", "train"]
+    leaked = [s for s in train if s["label"] == 1 and s["family"]][:3]  # aussi dans le test
+    test = samples["Win32", "test"] + leaked
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    for split, part in (("train", train), ("test", test)):
+        with zipfile.ZipFile(raw / f"Win32_{split}.zip", "w", zipfile.ZIP_DEFLATED) as archive:
+            lines = "".join(json.dumps(s) + "\n" for s in part)
+            archive.writestr("a.jsonl", lines)
+            archive.writestr("b.jsonl", lines)  # chaque ligne deux fois, comme dans EMBER2024
+    out = tmp_path / "processed"
+    prepare.main(["--data-dir", str(raw), "--out-dir", str(out), "--top-families", "4",
+                  "--max-per-family", "0", "--jobs", "1"])
+
+    data = load_dataset(out)
+    with_family = {split: {s["sha256"] for s in part if s["label"] == 1 and s["family"]}
+                   for split, part in (("train", train), ("test", test))}
+    assert set(data.meta_train.sha256) == with_family["train"]
+    assert set(data.meta_test.sha256) == with_family["test"] - with_family["train"]
+    assert data.meta_train.sha256.is_unique and data.meta_test.sha256.is_unique
+    assert set(data.meta_train.member) == {"a.jsonl"}  # la première occurrence est gardée
+    by_sha256 = {s["sha256"]: s for s in train}
+    expected = np.stack([vectorize(by_sha256[sha]) for sha in data.meta_train.sha256])
+    np.testing.assert_array_equal(data.X_train, expected)
+    assert data.info["duplicate_lines"] == {"train": len(train), "test": len(test)}
+    assert data.info["test_malware_seen_in_train"] == len(leaked)
+    labels = Counter(s["label"] for s in train)
+    assert data.info["ember_label_counts"]["train"] == {"benign": labels[0], "malicious": labels[1]}
+
+
+def test_load_dataset_rejects_duplicated_samples(tmp_path, fake_ember):
+    remote, _, _ = fake_ember
+    out = tmp_path / "processed"
+    prepare.main(["--data-dir", str(remote), "--out-dir", str(out), "--file-types", "Win32", "--jobs", "1"])
+    meta = (out / "meta_test.csv").read_text(encoding="utf-8").splitlines()
+    (out / "meta_test.csv").write_text("\n".join(meta[:-1] + [meta[1]]) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="en double"):
+        load_dataset(out)
+
+
+def test_find_dataset_uses_variable_then_standard_folders(tmp_path, fake_ember, monkeypatch):
+    from malware_family.dataset import find_dataset
+
+    remote, _, _ = fake_ember
+    home, project = tmp_path / "home", tmp_path / "projet"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("EMBER_DATASET", raising=False)
+    with pytest.raises(FileNotFoundError, match="EMBER_DATASET"):
+        find_dataset(project)
+    in_home = home / "ember2024" / "processed" / "Win32_top10"
+    prepare.main(["--data-dir", str(remote), "--out-dir", str(in_home), "--file-types", "Win32",
+                  "--jobs", "1"])
+    assert find_dataset(project) == in_home
+    in_project = project / "data" / "processed" / "ember2024_Win32_top10"
+    shutil.copytree(in_home, in_project)
+    assert find_dataset(project) == in_project  # le dossier du projet passe en premier
+    monkeypatch.setenv("EMBER_DATASET", "~/ailleurs")
+    assert find_dataset(project) == home / "ailleurs"  # la variable passe avant tout
