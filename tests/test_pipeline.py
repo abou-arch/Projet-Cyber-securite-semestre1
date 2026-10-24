@@ -288,3 +288,33 @@ def test_find_dataset_uses_variable_then_standard_folders(tmp_path, fake_ember, 
     assert find_dataset(project) == in_project  # le dossier du projet passe en premier
     monkeypatch.setenv("EMBER_DATASET", "~/ailleurs")
     assert find_dataset(project) == home / "ailleurs"  # la variable passe avant tout
+
+
+def test_prepare_variants_keep_families_and_never_overwrite_reference(tmp_path, fake_ember, monkeypatch,
+                                                                      capsys):
+    from malware_family import dataset
+
+    remote, samples, _ = fake_ember
+    monkeypatch.chdir(tmp_path)
+    prepare.main(["--data-dir", str(remote), "--file-types", "Win32", "--top-families", "3", "--jobs", "1"])
+    reference = load_dataset(tmp_path / "data" / "processed" / "hub_Win32_top3")
+    # Mêmes familles, étiquettes plus sûres : un autre dossier, la même liste de familles.
+    prepare.main(["--data-dir", str(remote), "--file-types", "Win32", "--families", *reference.families,
+                  "--min-confidence", "0.5", "--jobs", "1"])
+    variant = load_dataset(tmp_path / "data" / "processed" / "hub_Win32_familles3_conf0.5")
+    assert variant.families == reference.families
+    assert (variant.meta_train.family_confidence >= 0.5).all()
+    assert variant.info["requested_families"] == reference.families
+    assert load_dataset(tmp_path / "data" / "processed" / "hub_Win32_top3").info == reference.info
+
+    capsys.readouterr()
+    dataset.main([str(tmp_path / "data" / "processed" / "hub_Win32_top3"),
+                  str(tmp_path / "data" / "processed" / "hub_Win32_familles3_conf0.5")])
+    out = capsys.readouterr().out
+    assert "Comparaison (train / test)" in out
+    assert f"{len(reference.y_train)} / {len(reference.y_test)}" in out
+    assert f"{len(variant.y_train)} / {len(variant.y_test)}" in out
+
+    with pytest.raises(SystemExit, match="Familles absentes du train .* : inconnue"):
+        prepare.main(["--data-dir", str(remote), "--out-dir", str(tmp_path / "x"), "--families",
+                      reference.families[0], "inconnue", "--jobs", "1"])

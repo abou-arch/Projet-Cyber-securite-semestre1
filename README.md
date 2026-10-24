@@ -150,6 +150,8 @@ Options utiles :
   10 familles et réduit le déséquilibre entre familles. `0` garde tout, mais les familles
   les plus fréquentes comptent des dizaines de milliers d'échantillons.
 - `--min-confidence 0.5` : ignore les étiquettes de famille peu sûres.
+- `--families berbew cosmu …` : familles à classer, dans cet ordre (`y = 0, 1…`), au lieu des
+  plus fréquentes. Sert à garder les familles d'un autre jeu dans une variante (§ 4.5).
 - `--file-types Win32` : restreint la préparation à certains types téléchargés.
 - `--jobs K` : nombre de processus. Par défaut, tous les cœurs sont utilisés.
 
@@ -171,6 +173,68 @@ python -m malware_family.dataset data/processed/ember2024_Win32_top10
 La commande affiche la taille des matrices et le nombre d'échantillons par famille. Elle
 vérifie aussi qu'aucune valeur n'est aberrante (infinie ou manquante). Si elle se termine par
 « Installation vérifiée », le dataset est prêt.
+
+Avec plusieurs dossiers, elle vérifie chacun puis compare leurs effectifs famille par famille.
+
+### 4.5 Variantes du jeu de données
+
+Les variantes servent aux expériences de la section Résultats. Chacune a **son propre
+dossier** : ne réutilise jamais celui du jeu de référence. Sans `--out-dir`, le nom du dossier
+par défaut indique la variante (`…_conf0.5`, `…_top20`). Les commandes ci-dessous suivent la
+convention de l'équipe (`C:\ember2024`, ou `~/ember2024` sous macOS), et chacun les relance chez
+soi. Compte environ 7 minutes par variante, et 1 à 2 Go sur le disque.
+
+**Référence** (déjà préparée) : 10 familles les plus fréquentes, toutes les étiquettes.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10
+```
+
+**Variante A, étiquettes sûres, mêmes familles** (expérience de B) : mêmes 10 familles, dans le
+même ordre (mêmes `y`), mais seulement les étiquettes de confiance ≥ 0,5. Elle mesure l'effet
+du bruit d'étiquetage, à familles égales.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05 --min-confidence 0.5 --families berbew cosmu wacatac sfone upatre grandoreiro glupteba expiro sinowal flystudio
+```
+
+Attendu, d'après l'exploration : plusieurs familles passent sous le plafond de 10 000 dans le
+train. Environ 140 wacatac, 700 sinowal, 1 000 grandoreiro, 3 800 glupteba et 4 900 flystudio.
+Le train devient donc déséquilibré : il faut `class_weight="balanced"` ou une métrique par
+famille. Dans le test, il ne resterait qu'environ 4 sinowal et 30 sfone.
+
+**Variante B, étiquettes sûres, familles recalculées** (optionnelle) : les 10 familles les plus
+fréquentes **parmi les étiquettes sûres**. La liste change : wacatac, sinowal… sont remplacées.
+Les scores ne sont donc pas directement comparables à la référence.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05_top --min-confidence 0.5
+```
+
+**Variante C, 20 familles** (optionnelle) : problème plus difficile. Avec le plafond par défaut,
+`X_train` passe à 200 000 lignes (environ 2 Go). Sur un ordinateur de 8 Go de mémoire, ajoute
+`--max-per-family 5000` pour rester à 100 000 lignes.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top20 --top-families 20
+```
+
+**Vérifier et comparer** : la commande vérifie chaque jeu puis affiche un tableau des effectifs
+train / test par famille, un jeu par colonne.
+
+```bash
+python -m malware_family.dataset C:\ember2024\processed\Win32_top10 C:\ember2024\processed\Win32_top10_conf05 C:\ember2024\processed\Win32_top20
+```
+
+À vérifier pour chaque variante, et à noter dans le rapport :
+
+- la liste des familles et leurs effectifs (train et test) ;
+- dans `dataset_info.json` : `min_confidence`, `requested_families`, `duplicate_lines`, et
+  `test_malware_seen_in_train`, qui doit rester à 0 ;
+- les mêmes chiffres sur les trois machines (A, B et C).
+
+Les notebooks lisent un autre jeu si la variable `EMBER_DATASET` pointe vers son dossier. Pour
+nommer les colonnes hachées d'une variante, lance `python -m scripts.hash_lookup index <dossier>`.
 
 ## 5. Utiliser les données avec scikit-learn
 
