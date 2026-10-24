@@ -229,11 +229,3 @@ mais varient dans le test : le modèle ne pourra pas en tirer parti.
 | 58 % des malwares du test hors des 10 familles | Limite « monde fermé » à discuter |
 | 43 features constantes, 207 quasi nulles | `VarianceThreshold`, et prudence sur les cases hachées rares |
 | Doublons dans les archives, aucune fuite train/test | Jeu dédoublonné, évaluation saine |
-
-## Références
-
-- [EMBER2024] R. J. Joyce, G. Miller, P. Roth, R. Zak, E. Zaresky-Williams, H. Anderson,
-  E. Raff et J. Holt, *EMBER2024 – A Benchmark Dataset for Holistic Evaluation of Malware
-  Classifiers*, KDD 2025. arXiv:2506.05074.
-- [ClarAVy] ClarAVy, outil d'étiquetage des familles de malwares :
-  https://github.com/FutureComputing4AI/ClarAVy
