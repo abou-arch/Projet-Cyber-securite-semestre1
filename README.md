@@ -208,8 +208,10 @@ jupyter lab notebooks/01_exploration.ipynb
 - `02_features.ipynb` : ce que mesurent les 2568 colonnes, puis comparaison des familles sur
   12 features lisibles (boîtes à moustaches).
 
-Les notebooks lisent `data/processed/ember2024_Win32_top10`. Si tes données sont ailleurs,
-indique leur dossier dans la variable d'environnement `EMBER_DATASET` avant de lancer Jupyter :
+Les notebooks trouvent seuls le jeu préparé s'il est dans l'un des dossiers conseillés :
+`data/processed/ember2024_Win32_top10` (dans le projet), `C:\ember2024\processed\Win32_top10` ou
+`~/ember2024/processed/Win32_top10`. Si tes données sont ailleurs, indique leur dossier dans la
+variable d'environnement `EMBER_DATASET` avant de lancer Jupyter :
 
 ```bash
 set EMBER_DATASET=C:\ember2024\processed\Win32_top10        # Windows (cmd)
