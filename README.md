@@ -324,7 +324,7 @@ notebooks/           01_exploration, 02_features (A) ; 03_modeles (B) ; 04_impor
 scripts/             hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
 results/             métriques, prédictions, importances, listes de features
   figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
-rapport/             rapport et diapositives
+rapport/             rapport (une section par fichier, voir rapport/README.md) et diapositives
 plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
 GUIDE_DEBUTANT.txt   explications pour débutants, commandes Windows et macOS, glossaire
 tests/               tests hors ligne sur des données synthétiques
