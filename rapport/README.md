@@ -14,7 +14,7 @@ git. A assemble le tout à la fin.
 | 5. Résultats (scores, confusions, dérive temporelle) | `05_resultats.md` | B | plan proposé |
 | 6. Importance des features | `06_importance.md` | C | plan proposé |
 | 7. Discussion et limites | `07_discussion.md` | C, avec B | points à développer |
-| 8. Éthique et sécurité | `08_ethique_securite.md` | A | points à développer |
+| 8. Éthique et sécurité | `08_ethique_securite.md` | A | premier jet |
 | 9. Conclusion | `09_conclusion.md` | A, B et C | à rédiger à la fin |
 | Bibliographie | `bibliographie.md` | tous (A relit) | à compléter |
 
