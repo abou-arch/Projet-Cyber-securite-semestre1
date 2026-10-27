@@ -220,6 +220,9 @@ python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2
 python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top20 --top-families 20
 ```
 
+Résultat obtenu : 162 778 fichiers en train (1,7 Go) et 39 513 en test. Les 10 premières familles
+et leurs `y` sont ceux de la référence. Les 10 ajoutées ont de 4 632 à 8 987 fichiers en train.
+
 **Vérifier et comparer** : la commande vérifie chaque jeu puis affiche un tableau des effectifs
 train / test par famille, un jeu par colonne.
 

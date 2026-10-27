@@ -23,5 +23,10 @@
 
 - Résultats sur la variante A du README (§ 4.5) : mêmes 10 familles et mêmes `y`, seulement les
   étiquettes de confiance ≥ 0,5. Le train y devient déséquilibré (148 wacatac, 761 sinowal), et
-  le test ne compte plus que 4 sinowal (tableau 2.4).
+  le test ne compte plus que 4 sinowal (tableau 2.5).
 - Optionnel : variante B (familles recalculées), en précisant que la liste des familles change.
+
+## 5.5 Variante : 20 familles
+
+- Résultats sur `Win32_top20` (tableau 2.3). Les 10 premières familles et leurs `y` sont ceux de
+  la référence : comparer leurs scores dans les deux jeux montre l'effet des familles ajoutées.

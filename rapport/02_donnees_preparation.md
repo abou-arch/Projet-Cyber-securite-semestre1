@@ -82,6 +82,23 @@ l'évaluation :
 - le score de sinowal repose sur 9 fichiers : une seule erreur fait varier son rappel de
   11 points. Il ne permet pas de conclure sur cette famille.
 
+**Variante à 20 familles.** Pour un problème plus difficile, nous avons aussi préparé les
+20 familles les plus fréquentes : 162 778 fichiers en train et 39 513 en test. Les 10 premières
+sont exactement celles du jeu de référence, avec les mêmes effectifs et les mêmes indices `y`.
+Les scores sur ces 10 familles se comparent donc directement. Les 10 suivantes ont toutes moins
+de 10 000 fichiers dans le train, de 4 632 (shipshape) à 8 987 (tempedreve) : le train reste
+proche de l'équilibre (rapport 2,2).
+
+**Tableau 2.3 – Familles ajoutées dans la variante à 20 familles (train / test).**
+
+| Famille | Train / test | Famille | Train / test |
+|---|---:|---|---:|
+| tempedreve | 8 987 / 414 | blackmoon | 6 120 / 620 |
+| virut | 7 486 / 2 132 | ekstak | 5 375 / 1 013 |
+| barys | 7 193 / 227 | urelas | 4 962 / 300 |
+| floxif | 6 843 / 2 754 | ipamor | 4 798 / 626 |
+| emdup | 6 382 / 291 | shipshape | 4 632 / 188 |
+
 ## 2.3 Chaîne de préparation
 
 La préparation est entièrement automatisée et reproductible, avec trois commandes :
@@ -156,7 +173,7 @@ La confiance des étiquettes est **bimodale** : les fichiers ont soit une étiqu
 (autour de 0,85), soit une étiquette douteuse (autour de 0,15–0,3), avec peu d'intermédiaires.
 La moitié environ des étiquettes dépasse 0,5 : 48 % dans le train et 65 % dans le test.
 
-**Tableau 2.3 – Part des étiquettes de confiance ≥ 0,5, par famille.**
+**Tableau 2.4 – Part des étiquettes de confiance ≥ 0,5, par famille.**
 
 | Famille     | Train | Test |
 |-------------|------:|-----:|
@@ -183,7 +200,7 @@ Trois constats :
   ceux du train : c'est une autre facette de la dérive temporelle.
 
 **Variantes à étiquettes sûres.** Pour mesurer l'effet de ce bruit d'étiquetage, nous avons
-préparé deux variantes qui ne gardent que les étiquettes de confiance ≥ 0,5 (tableau 2.4).
+préparé deux variantes qui ne gardent que les étiquettes de confiance ≥ 0,5 (tableau 2.5).
 
 - **Variante A : mêmes 10 familles, dans le même ordre.** Elle permet une comparaison à familles
   égales. Mais le train y devient déséquilibré : il ne reste que 148 wacatac, 761 sinowal,
@@ -193,7 +210,7 @@ préparé deux variantes qui ne gardent que les étiquettes de confiance ≥ 0,5
   change : wacatac, grandoreiro et sinowal sont remplacées par floxif, urelas et eggnog. Même
   ainsi, seules 5 familles atteignent le plafond de 10 000, et eggnog n'a que 2 fichiers de test.
 
-**Tableau 2.4 – Effectifs des variantes à étiquettes sûres (train / test).**
+**Tableau 2.5 – Effectifs des variantes à étiquettes sûres (train / test).**
 
 | Famille     | Référence     | Variante A   | Variante B   |
 |-------------|--------------:|-------------:|-------------:|
