@@ -17,6 +17,7 @@ git. A assemble le tout à la fin.
 | 8. Éthique et sécurité | `08_ethique_securite.md` | A | premier jet |
 | 9. Conclusion | `09_conclusion.md` | A, B et C | à rédiger à la fin |
 | Bibliographie | `bibliographie.md` | tous (A relit) | à compléter |
+| Soutenance (trame des diapositives) | `diapositives.md` | A coordonne, chacun sa partie | trame prête |
 
 Mettez à jour la colonne « État » quand vous avancez.
 
