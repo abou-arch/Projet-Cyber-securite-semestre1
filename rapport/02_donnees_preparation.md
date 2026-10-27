@@ -182,9 +182,39 @@ Trois constats :
   train et le test**. Les fichiers de test de ces familles ne ressemblent donc pas tout à fait à
   ceux du train : c'est une autre facette de la dérive temporelle.
 
-Ne garder que les étiquettes de confiance ≥ 0,5 (option `--min-confidence 0.5`) changerait le
-problème lui-même : wacatac, sinowal, grandoreiro et une grande partie de glupteba
-disparaîtraient du train, et d'autres familles les remplaceraient parmi les 10 plus fréquentes.
+**Variantes à étiquettes sûres.** Pour mesurer l'effet de ce bruit d'étiquetage, nous avons
+préparé deux variantes qui ne gardent que les étiquettes de confiance ≥ 0,5 (tableau 2.4).
+
+- **Variante A : mêmes 10 familles, dans le même ordre.** Elle permet une comparaison à familles
+  égales. Mais le train y devient déséquilibré : il ne reste que 148 wacatac, 761 sinowal,
+  1 052 grandoreiro, 3 799 glupteba et 4 972 flystudio. Le test n'a plus que 4 sinowal, 28 sfone,
+  88 wacatac et 90 grandoreiro.
+- **Variante B : les 10 familles les plus fréquentes parmi les étiquettes sûres.** Le problème
+  change : wacatac, grandoreiro et sinowal sont remplacées par floxif, urelas et eggnog. Même
+  ainsi, seules 5 familles atteignent le plafond de 10 000, et eggnog n'a que 2 fichiers de test.
+
+**Tableau 2.4 – Effectifs des variantes à étiquettes sûres (train / test).**
+
+| Famille     | Référence     | Variante A   | Variante B   |
+|-------------|--------------:|-------------:|-------------:|
+| berbew      | 10 000 / 10 000 | 10 000 / 10 000 | 10 000 / 10 000 |
+| cosmu       | 10 000 / 4 781  | 10 000 / 4 643  | 10 000 / 4 643  |
+| wacatac     | 10 000 / 6 119  | 148 / 88        | –               |
+| sfone       | 10 000 / 66     | 10 000 / 28     | 10 000 / 28     |
+| upatre      | 10 000 / 3 215  | 10 000 / 1 731  | 10 000 / 1 731  |
+| grandoreiro | 10 000 / 113    | 1 052 / 90      | –               |
+| glupteba    | 10 000 / 1 706  | 3 799 / 1 031   | 3 799 / 1 031   |
+| expiro      | 10 000 / 3 983  | 10 000 / 3 693  | 10 000 / 3 693  |
+| sinowal     | 10 000 / 9      | 761 / 4         | –               |
+| flystudio   | 10 000 / 956    | 4 972 / 238     | 4 972 / 238     |
+| floxif      | –               | –               | 6 509 / 2 677   |
+| urelas      | –               | –               | 4 641 / 279     |
+| eggnog      | –               | –               | 3 455 / 2       |
+| **Total**   | **100 000 / 30 948** | **60 732 / 21 546** | **73 376 / 24 322** |
+
+Filtrer les étiquettes ne supprime donc pas seulement du bruit : cela retire presque
+entièrement certaines familles. Les familles les plus touchées (wacatac, sinowal, grandoreiro)
+sont justement celles dont l'étiquette est la moins sûre.
 
 ## 2.7 Malwares des autres familles
 
@@ -226,6 +256,7 @@ mais varient dans le test : le modèle ne pourra pas en tirer parti.
 | Familles par vagues, dérive temporelle | Validation temporelle plutôt qu'aléatoire |
 | wacatac : étiquette générique, peu sûre | Confusions attendues, à discuter |
 | Confiance des étiquettes différente entre train et test pour 4 familles | À relier aux erreurs du modèle sur ces familles |
+| Filtrer les étiquettes peu sûres vide wacatac, sinowal et grandoreiro | Variante A à familles égales, avec `class_weight` |
 | 58 % des malwares du test hors des 10 familles | Limite « monde fermé » à discuter |
 | 43 features constantes, 207 quasi nulles | `VarianceThreshold`, et prudence sur les cases hachées rares |
 | Doublons dans les archives, aucune fuite train/test | Jeu dédoublonné, évaluation saine |

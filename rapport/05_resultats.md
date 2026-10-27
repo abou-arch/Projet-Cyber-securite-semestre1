@@ -22,6 +22,6 @@
 ## 5.4 Variante : étiquettes plus sûres
 
 - Résultats sur la variante A du README (§ 4.5) : mêmes 10 familles et mêmes `y`, seulement les
-  étiquettes de confiance ≥ 0,5. Le train y devient déséquilibré (environ 140 wacatac), et le
-  test ne compte plus qu'environ 4 sinowal.
+  étiquettes de confiance ≥ 0,5. Le train y devient déséquilibré (148 wacatac, 761 sinowal), et
+  le test ne compte plus que 4 sinowal (tableau 2.4).
 - Optionnel : variante B (familles recalculées), en précisant que la liste des familles change.

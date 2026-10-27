@@ -198,14 +198,15 @@ du bruit d'étiquetage, à familles égales.
 python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05 --min-confidence 0.5 --families berbew cosmu wacatac sfone upatre grandoreiro glupteba expiro sinowal flystudio
 ```
 
-Attendu, d'après l'exploration : plusieurs familles passent sous le plafond de 10 000 dans le
-train. Environ 140 wacatac, 700 sinowal, 1 000 grandoreiro, 3 800 glupteba et 4 900 flystudio.
-Le train devient donc déséquilibré : il faut `class_weight="balanced"` ou une métrique par
-famille. Dans le test, il ne resterait qu'environ 4 sinowal et 30 sfone.
+Résultat obtenu : 60 732 fichiers en train et 21 546 en test. Plusieurs familles passent sous le
+plafond de 10 000 dans le train : 148 wacatac, 761 sinowal, 1 052 grandoreiro, 3 799 glupteba et
+4 972 flystudio. Le train devient donc déséquilibré : il faut `class_weight="balanced"` ou une
+métrique par famille. Dans le test, il ne reste que 4 sinowal et 28 sfone.
 
 **Variante B, étiquettes sûres, familles recalculées** (optionnelle) : les 10 familles les plus
-fréquentes **parmi les étiquettes sûres**. La liste change : wacatac, sinowal… sont remplacées.
-Les scores ne sont donc pas directement comparables à la référence.
+fréquentes **parmi les étiquettes sûres**. La liste change : wacatac, grandoreiro et sinowal sont
+remplacées par floxif, urelas et eggnog. Les scores ne sont donc pas directement comparables à la
+référence, et eggnog n'a que 2 fichiers de test (73 376 en train, 24 322 en test au total).
 
 ```bash
 python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05_top --min-confidence 0.5
