@@ -347,6 +347,29 @@ save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_c
 - Une couleur par famille (`family_colors`), la même dans toutes les figures du rapport.
 - Titres et axes en français, unités entre parenthèses : « Taille (octets) ».
 
+### 6.4 Importance des features (rôle C)
+
+Sur le modèle final de B (`models/best_model.joblib`, produit par `python -m scripts.train`) :
+
+```bash
+python -m scripts.hash_lookup index C:\ember2024\processed\Win32_top10   # noms réels (une fois)
+python -m scripts.importance --max-rows 5000    # essai rapide (une minute environ)
+python -m scripts.importance --ablation         # calcul complet, environ 30 min
+```
+
+Le script mesure sur le test, avec le F1 macro :
+
+- le MDI de la forêt ;
+- la permutation par groupe (12 groupes, avec la baisse du F1 de chaque famille) ;
+- la permutation feature par feature des 50 meilleures du MDI ;
+- l'ablation (un groupe seul, tous sauf un) ;
+- les features qui rapprochent les fichiers mal classés de la famille prédite.
+
+Il vérifie aussi que le modèle donne les mêmes prédictions que `results/predictions_test.csv`.
+Résultats : `results/importances.csv`, `importances_groupes.csv`, `confusions_features.csv`,
+`ablation.csv`, `importance_info.json`, et les figures `results/figures/C_*.png`, commentées
+dans `notebooks/04_importance.ipynb`.
+
 ## 7. Sécurité
 
 - EMBER2024 ne contient **que des caractéristiques extraites**. Aucun code malveillant n'est

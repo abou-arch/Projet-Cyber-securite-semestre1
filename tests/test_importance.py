@@ -1,0 +1,120 @@
+"""Tests de scripts/importance.py sur un petit jeu préparé synthétique (quelques secondes)."""
+import json
+
+import joblib
+import numpy as np
+import pandas as pd
+import pytest
+from sklearn.ensemble import RandomForestClassifier
+
+from malware_family.dataset import load_dataset
+from malware_family.ember_features import feature_groups, feature_names
+from scripts import importance
+
+FAMILIES = ["alpha", "beta", "gamma"]
+# Deux colonnes par groupe ; seul « imports » distingue les familles.
+NAMES = ["general_a", "general_b", "imports_a", "imports_b", "section_a", "section_b"]
+
+
+def _write_dataset(path, n_train=240, n_test=90, seed=0):
+    rng = np.random.default_rng(seed)
+    path.mkdir()
+    for split, n, start in (("train", n_train, 0), ("test", n_test, n_train)):
+        y = rng.integers(0, len(FAMILIES), n)
+        X = rng.normal(size=(n, len(NAMES))).astype(np.float32)
+        X[:, 2] += 4 * y
+        X[:, 3] += 4 * (y == 2)
+        np.save(path / f"X_{split}.npy", X)
+        np.save(path / f"y_{split}.npy", y)
+        days = pd.Timestamp("2023-09-24") + pd.to_timedelta(np.arange(start, start + n), unit="D")
+        pd.DataFrame({"sha256": [f"{i:064x}" for i in range(start, start + n)],
+                      "first_seen": days.strftime("%Y-%m-%d"), "file_type": "Win32",
+                      "family": np.array(FAMILIES)[y], "archive": f"Win32_{split}.zip",
+                      "member": "semaine.jsonl", "line": np.arange(n)}).to_csv(path / f"meta_{split}.csv",
+                                                                             index=False)
+    (path / "families.txt").write_text("\n".join(FAMILIES) + "\n", encoding="utf-8")
+    (path / "feature_names.txt").write_text("\n".join(NAMES) + "\n", encoding="utf-8")
+    (path / "dataset_info.json").write_text(json.dumps({"created": "2026-01-01T00:00:00+00:00"}),
+                                            encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def trained(tmp_path):
+    dataset = _write_dataset(tmp_path / "jeu")
+    data = load_dataset(dataset)
+    model = RandomForestClassifier(n_estimators=30, max_depth=6, random_state=0, n_jobs=1)
+    model.fit(data.X_train, data.y_train)
+    model_path = tmp_path / "models" / "best_model.joblib"
+    model_path.parent.mkdir()
+    joblib.dump(model, model_path)
+    return dataset, data, model, model_path
+
+
+def test_groups_follow_ember_feature_groups():
+    groups = importance.feature_groups_of(feature_names())
+    expected = feature_groups()
+    assert list(groups) == list(expected)
+    for name, columns in groups.items():
+        np.testing.assert_array_equal(columns, np.arange(expected[name].start, expected[name].stop))
+
+
+def test_permutation_drop_restores_data_and_finds_the_signal(trained):
+    _, data, model, _ = trained
+    X = np.array(data.X_test)
+    before = X.copy()
+    labels = list(range(len(FAMILIES)))
+    useful, _ = importance.permutation_drop(model, X, data.y_test, [2, 3], labels, n_repeats=3)
+    useless, family_drops = importance.permutation_drop(model, X, data.y_test, [0, 1], labels, n_repeats=3)
+    np.testing.assert_array_equal(X, before)  # X remis en état
+    assert useful.shape == (3,) and family_drops.shape == (3,)
+    assert useful.mean() > 0.3 > abs(useless.mean())
+
+
+def test_confusion_profile_measures_closeness():
+    X = np.array([[0.0], [0.0], [1.0], [1.0], [0.9]])
+    y_true = np.array([0, 0, 1, 1, 0])
+    y_pred = np.array([0, 0, 1, 1, 1])  # le dernier « alpha » est classé « beta »
+    assert importance.confused_pairs(y_true, y_pred, FAMILIES, min_count=1) == [("alpha", "beta", 1)]
+    profile = importance.confusion_profile(X, y_true, y_pred, FAMILIES, "alpha", "beta", ["f"], ["f"])
+    assert profile.n_confondus[0] == 1
+    assert profile.rapprochement[0] == pytest.approx(0.9)
+
+
+def test_main_writes_tables_and_figures(trained, tmp_path, capsys):
+    dataset, data, model, model_path = trained
+    results, figures = tmp_path / "results", tmp_path / "figures"
+    importance.main(["--dataset", str(dataset), "--model", str(model_path), "--results-dir", str(results),
+                     "--figures-dir", str(figures), "--n-repeats", "2", "--top", "4", "--pairs", "2",
+                     "--ablation", "--ablation-trees", "10"])
+    out = capsys.readouterr().out
+    assert "Pas d'index des noms hachés" in out
+
+    groups = pd.read_csv(results / "importances_groupes.csv")
+    assert groups.group[0] == "imports"
+    assert set(groups.group) == {"general", "imports", "section"}
+    assert groups.mdi_sum.sum() == pytest.approx(1)
+    assert {f"f1_drop_{family}" for family in FAMILIES} <= set(groups.columns)
+
+    features = pd.read_csv(results / "importances.csv")
+    assert len(features) == len(NAMES) and features.perm_f1_drop_mean.notna().sum() == 4
+    assert features.feature[0] in ("imports_a", "imports_b")
+
+    ablation = pd.read_csv(results / "ablation.csv")
+    assert len(ablation) == 6
+    scores = ablation.set_index(["group", "mode"]).test_f1_macro
+    assert scores["imports", "seul"] > scores["general", "seul"]
+    assert scores["imports", "sans"] < scores["general", "sans"]
+
+    info = json.loads((results / "importance_info.json").read_text(encoding="utf-8"))
+    assert info["n_test_rows"] == len(data.y_test) and not info["sampled"] and info["ablation"]
+    assert (results / "confusions_features.csv").is_file()
+    assert {path.name for path in figures.iterdir()} == {
+        "C_importance_par_groupe.png", "C_top_features.png", "C_importance_groupes_par_famille.png",
+        "C_ablation.png"}
+
+
+def test_main_requires_a_model(trained, tmp_path):
+    dataset = trained[0]
+    with pytest.raises(SystemExit, match="scripts.train"):
+        importance.main(["--dataset", str(dataset), "--model", str(tmp_path / "absent.joblib")])
