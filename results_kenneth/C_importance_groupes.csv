@@ -1,0 +1,13 @@
+groupe,nb_features,inutilisees,gain_pct
+header,73,13,26.06
+imports,1282,601,15.35
+section,221,19,13.32
+strings,175,9,11.72
+richheader,33,0,10.04
+byteentropy,256,0,8.1
+histogram,256,0,6.44
+pefilewarnings,56,29,4.62
+datadirectories,31,5,3.43
+general,5,1,0.85
+authenticode,8,2,0.03
+exports,129,88,0.03

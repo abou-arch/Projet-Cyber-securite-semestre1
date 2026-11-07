@@ -1,0 +1,13 @@
+groupe,baisse_f1_macro
+header,0.2482
+datadirectories,0.0554
+section,0.044
+imports,0.0285
+byteentropy,0.0164
+strings,0.0112
+richheader,0.0105
+histogram,0.0029
+pefilewarnings,0.0016
+general,0.0002
+authenticode,0.0
+exports,0.0
