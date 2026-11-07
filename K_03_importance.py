@@ -80,3 +80,39 @@ ax.set_xlabel("Baisse du F1 macro quand le groupe est mélangé")
 ax.set_title("Importance par permutation, par type de feature (test)")
 fig.tight_layout()
 fig.savefig(OUT / "figures/C_permutation_groupes.png", dpi=150)
+# --- C5 : quels indices pour quelle famille ? (SHAP natif de LightGBM, sur le test) ---
+F = len(noms)
+lignes_fam, groupes_fam = [], {}
+for k, fam in enumerate(familles):
+    idx = np.where(y_te == k)[0][:300]          # 300 fichiers max par famille
+    contrib = modele.predict(X_te[idx], pred_contrib=True)
+    bloc = np.abs(contrib[:, k * (F + 1): k * (F + 1) + F]).mean(axis=0)
+    top5 = np.argsort(bloc)[::-1][:5]
+    for r, j in enumerate(top5, 1):
+        lignes_fam.append({"famille": fam, "rang": r, "feature": noms[j],
+                           "groupe": groupe_col[j],
+                           "contribution": round(float(bloc[j]), 4)})
+    parts = pd.Series(bloc, index=groupe_col).groupby(level=0).sum()
+    groupes_fam[fam] = (100 * parts / parts.sum()).round(1)
+    print(f"\n{fam} ({len(idx)} fichiers) : " + ", ".join(noms[j] for j in top5[:3]))
+
+pd.DataFrame(lignes_fam).to_csv(OUT / "C_top5_par_famille.csv", index=False)
+
+heat = pd.DataFrame(groupes_fam).T
+heat = heat[heat.mean().sort_values(ascending=False).index]
+heat.to_csv(OUT / "C_groupes_par_famille.csv")
+print("\nPart de chaque groupe (%) par famille :\n", heat.to_string())
+
+fig, ax = plt.subplots(figsize=(11, 6))
+im = ax.imshow(heat.values, cmap="Blues")
+ax.set_xticks(range(heat.shape[1]))
+ax.set_xticklabels(heat.columns, rotation=45, ha="right")
+ax.set_yticks(range(heat.shape[0]))
+ax.set_yticklabels(heat.index)
+for i in range(heat.shape[0]):
+    for j in range(heat.shape[1]):
+        ax.text(j, i, f"{heat.values[i, j]:.0f}", ha="center", va="center", fontsize=8)
+fig.colorbar(im, label="% de la contribution")
+ax.set_title("Quels types d'indices pour quelle famille ? (SHAP, test)")
+fig.tight_layout()
+fig.savefig(OUT / "figures/C_groupes_par_famille.png", dpi=150)
