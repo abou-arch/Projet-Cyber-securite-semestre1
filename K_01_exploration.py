@@ -1,4 +1,4 @@
-"""Rôle A : exploration des données EMBER2024 (version de Kenneth).
+Rôle A : exploration des données EMBER2024 (version de Kenneth).
 
 À placer à la RACINE du projet (à côté de README.md), puis lancer :
     python K_01_exploration.py
