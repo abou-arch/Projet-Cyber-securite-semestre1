@@ -1,0 +1,91 @@
+famille_reelle,famille_predite,n_confondus,feature,moyenne_reelle_ok,moyenne_confondus,moyenne_predite_ok,rapprochement,name
+expiro,wacatac,200,section_vsize_hash05,-905851.95,-204127.89,-560734.0028272077,0.6630483359700733,"section_vsize_hash05 (.reloc, petite, +111)"
+expiro,wacatac,200,header_optional_sizeof_stack_reserve,1082106.3404255318,1698693.12,2088146.9850324297,0.6128845617518709,header_optional_sizeof_stack_reserve
+expiro,wacatac,200,section_size_hash05,-819242.7574468085,-200980.505,-47812.183103276235,0.8014489871274986,"section_size_hash05 (.reloc, petite, +98)"
+expiro,wacatac,200,imports_function_hash0937,0.036436170212765955,0.04,0.026110094794611675,0.2041872291942363,"imports_function_hash0937 (wininet.dll:DeleteUrlCacheEntry, oleaut32.dll:DispCallFunc, +75)"
+expiro,wacatac,200,header_optional_major_linker_version,11.224202127659574,7.76,9.873773490769999,0.6210500663025286,header_optional_major_linker_version
+expiro,wacatac,200,header_dos_e_lfanew,249.85744680851064,208.24,208.74239148511558,0.9880723311040919,header_dos_e_lfanew
+expiro,wacatac,200,datadirectories_RESOURCE_rva,454226.7914893617,2996654.08,5674649.521204058,0.48701559627328983,datadirectories_RESOURCE_rva
+expiro,wacatac,200,datadirectories_RESOURCE_size,364614.29893617023,514314.115,584398.0545484783,0.6811232051557792,datadirectories_RESOURCE_size
+expiro,wacatac,200,header_optional_sizeof_code,251987.33617021277,937318.925,2240561.8538167304,0.3446346027006716,header_optional_sizeof_code
+expiro,wacatac,200,richheader_hash22,5.984308510638298,-0.565,-1.553467487111259,0.8688648366034795,"richheader_hash22 (730678, 663528, +59)"
+expiro,wacatac,200,header_optional_sizeof_uninitialized_data,47622.71276595745,623872.48,850739.1054382172,0.7175171276440397,header_optional_sizeof_uninitialized_data
+expiro,wacatac,200,section_vsize_ratio_max,11.397884110250372,19.48949146658182,3712.9967592103885,0.002185976284670378,section_vsize_ratio_max
+expiro,wacatac,200,header_optional_major_operating_system_version,5.49468085106383,4.625,4.733078330284384,0.8894632417203625,header_optional_major_operating_system_version
+expiro,wacatac,200,header_optional_minor_linker_version,8.942553191489361,13.985,16.933477465491436,0.6310217235965925,header_optional_minor_linker_version
+expiro,wacatac,200,histogram_byte_0x5f,0.002974280693609778,0.003290340534258576,0.0037685478096306053,0.39792638304379985,histogram_byte_0x5f
+expiro,wacatac,200,richheader_hash10,-2.053989361702128,0.07,1.9269915183768502,0.5335341780541257,"richheader_hash10 (665142, 8111655, +55)"
+expiro,wacatac,200,imports_function_hash0868,0.04521276595744681,0.065,0.03176451022783968,0.3731840354278884,"imports_function_hash0868 (shell32.dll:SHChangeNotify, mfc42.dll:MFC42.DLL:ordinal535, +93)"
+expiro,wacatac,200,strings_char_0x5f,0.01395118260834158,0.015213791778078302,0.013502777528772934,0.42460291429351654,strings_char_0x5f
+expiro,wacatac,200,imports_function_hash0292,0.1077127659574468,0.02,0.016796939963412607,0.9647689497228175,"imports_function_hash0292 (crtdll.dll:raise, msvcp140.dll:?_Getgloballocale@locale@std@@CAPAV_Locimp@12@XZ, +69)"
+expiro,wacatac,200,strings_char_0x62,0.009069663132763804,0.010089819516724673,0.009105506508529827,0.5089408638281763,strings_char_0x62
+expiro,wacatac,200,imports_function_hash0780,0.032180851063829785,0.03,0.010643605521370364,0.10125951619627337,"imports_function_hash0780 (crtdll.dll:_stricmp, rsaenh.dll:CPEncrypt, +99)"
+expiro,wacatac,200,header_coff_timestamp,1514286104.261702,1276774790.095,1426102682.9328122,0.6139794257305734,header_coff_timestamp
+expiro,wacatac,200,strings_char_0x61,0.021553482117126398,0.028166533920448274,0.024789648372498575,0.6619712987969969,strings_char_0x61
+expiro,wacatac,200,richheader_hash04,0.989095744680851,-4.185,2.1250623648761016,0.4505420158204756,"richheader_hash04 (924803, 17134930, +45)"
+expiro,wacatac,200,header_characteristic_DEBUG_STRIPPED,0.018085106382978722,0.4,0.10111425245301846,0.5609790451490176,header_characteristic_DEBUG_STRIPPED
+expiro,wacatac,200,imports_function_hash0412,0.08936170212765958,0.16,0.048727756527523695,0.388313383876108,"imports_function_hash0412 (crtdll.dll:strchr, kernel32.dll:FreeResource, +64)"
+expiro,wacatac,200,imports_library_hash218,0.011436170212765957,0.035,0.01962414768002661,0.6051366758043605,"imports_library_hash218 (mpr.dll, atwbxui15.dll, +2)"
+expiro,wacatac,200,richheader_hash09,0.10558510638297873,0.19,0.0334275735905538,0.35028769815669164,"richheader_hash09 (860137, 8307863, +48)"
+expiro,wacatac,200,richheader_hash07,7.385106382978724,-0.97,0.534508564776318,0.8474069654090414,"richheader_hash07 (729064, 663407, +57)"
+expiro,wacatac,200,byteentropy_H09_hia,0.0001154728614522735,0.0003564700777940288,0.0007288103978598092,0.3929275513664687,byteentropy_H09_hia
+cosmu,wacatac,89,section_vsize_hash05,-114.3921568627451,43079.79775280899,-560734.0028272077,0.06675990180118206,"section_vsize_hash05 (.reloc, petite, +111)"
+cosmu,wacatac,89,header_optional_sizeof_stack_reserve,1048576.0,1048622.02247191,2088146.9850324297,4.427063911241622e-05,header_optional_sizeof_stack_reserve
+cosmu,wacatac,89,section_size_hash05,-115.99658994032396,-2456.449438202247,-47812.183103276235,0.04907002046395323,"section_size_hash05 (.reloc, petite, +98)"
+cosmu,wacatac,89,imports_function_hash0937,0.0,0.0,0.026110094794611675,0.0,"imports_function_hash0937 (wininet.dll:DeleteUrlCacheEntry, oleaut32.dll:DispCallFunc, +75)"
+cosmu,wacatac,89,header_optional_major_linker_version,6.096760443307758,5.943820224719101,9.873773490769999,0.03745878239636694,header_optional_major_linker_version
+cosmu,wacatac,89,header_dos_e_lfanew,247.05200341005968,213.48314606741573,208.74239148511558,0.8762515634042912,header_dos_e_lfanew
+cosmu,wacatac,89,datadirectories_RESOURCE_rva,35999.754475703325,169546.78651685393,5674649.521204058,0.023684221855587422,datadirectories_RESOURCE_rva
+cosmu,wacatac,89,datadirectories_RESOURCE_size,137834.46376811594,29438.584269662922,584398.0545484783,0.16340545008772234,datadirectories_RESOURCE_size
+cosmu,wacatac,89,header_optional_sizeof_code,11097.69820971867,109568.0,2240561.8538167304,0.04416769901531385,header_optional_sizeof_code
+cosmu,wacatac,89,richheader_hash22,-1.9403239556692242,-2.6853932584269664,-1.553467487111259,0.3969479265285416,"richheader_hash22 (730678, 663528, +59)"
+cosmu,wacatac,89,header_optional_sizeof_uninitialized_data,18397.84484228474,47098.247191011236,850739.1054382172,0.03448153264464846,header_optional_sizeof_uninitialized_data
+cosmu,wacatac,89,section_vsize_ratio_max,3.6798565190314028,5.832930735657724,3712.9967592103885,0.0005804503290253044,section_vsize_ratio_max
+cosmu,wacatac,89,header_optional_major_operating_system_version,4.02536231884058,4.112359550561798,4.733078330284384,0.12292675354869453,header_optional_major_operating_system_version
+cosmu,wacatac,89,header_optional_minor_linker_version,0.0,5.561797752808989,16.933477465491436,0.3284498275173142,header_optional_minor_linker_version
+cosmu,wacatac,89,histogram_byte_0x5f,0.0050444755269826135,0.002762813599290669,0.0037685478096306053,0.694063578555502,histogram_byte_0x5f
+cosmu,wacatac,89,richheader_hash10,-0.13768115942028986,3.8764044943820224,1.9269915183768502,0.6731091768410277,"richheader_hash10 (665142, 8111655, +55)"
+cosmu,wacatac,89,imports_function_hash0868,1.5087382779198637,0.0,0.03176451022783968,0.9793804266553563,"imports_function_hash0868 (shell32.dll:SHChangeNotify, mfc42.dll:MFC42.DLL:ordinal535, +93)"
+cosmu,wacatac,89,strings_char_0x5f,0.014756635975290632,0.0158979726197941,0.013502777528772934,0.32272766932604796,strings_char_0x5f
+cosmu,wacatac,89,imports_function_hash0292,0.0,0.0,0.016796939963412607,0.0,"imports_function_hash0292 (crtdll.dll:raise, msvcp140.dll:?_Getgloballocale@locale@std@@CAPAV_Locimp@12@XZ, +69)"
+cosmu,wacatac,89,strings_char_0x62,0.009502629325686688,0.011798586571141764,0.009105506508529827,0.46020045625688805,strings_char_0x62
+cosmu,wacatac,89,imports_function_hash0780,0.0,0.0,0.010643605521370364,0.0,"imports_function_hash0780 (crtdll.dll:_stricmp, rsaenh.dll:CPEncrypt, +99)"
+cosmu,wacatac,89,header_coff_timestamp,1299757082.3529413,1194404236.224719,1426102682.9328122,0.31257214663581034,header_coff_timestamp
+cosmu,wacatac,89,strings_char_0x61,0.013442087749910667,0.02335861020752888,0.024789648372498575,0.8738902383899904,strings_char_0x61
+cosmu,wacatac,89,richheader_hash04,0.9712276214833759,1.1235955056179776,2.1250623648761016,0.13205347213464944,"richheader_hash04 (924803, 17134930, +45)"
+cosmu,wacatac,89,header_characteristic_DEBUG_STRIPPED,0.3199062233589088,0.15730337078651685,0.10111425245301846,0.743184733421195,header_characteristic_DEBUG_STRIPPED
+cosmu,wacatac,89,imports_function_hash0412,0.007246376811594203,0.0,0.048727756527523695,0.1294593838138093,"imports_function_hash0412 (crtdll.dll:strchr, kernel32.dll:FreeResource, +64)"
+cosmu,wacatac,89,imports_library_hash218,0.0,0.0,0.01962414768002661,0.0,"imports_library_hash218 (mpr.dll, atwbxui15.dll, +2)"
+cosmu,wacatac,89,richheader_hash09,-0.002131287297527707,-0.0449438202247191,0.0334275735905538,0.3532855724189813,"richheader_hash09 (860137, 8307863, +48)"
+cosmu,wacatac,89,richheader_hash07,-11.641943734015346,-2.359550561797753,0.534508564776318,0.7623232896119287,"richheader_hash07 (729064, 663407, +57)"
+cosmu,wacatac,89,byteentropy_H09_hia,0.0319601645008528,0.0015313880117272664,0.0007288103978598092,0.9743021832732337,byteentropy_H09_hia
+flystudio,wacatac,86,section_vsize_hash05,-7692.986206896552,49356.16279069767,-560734.0028272077,0.0855130971114692,"section_vsize_hash05 (.reloc, petite, +111)"
+flystudio,wacatac,86,header_optional_sizeof_stack_reserve,1048576.0,1076009.6744186047,2088146.9850324297,0.026389419109988817,header_optional_sizeof_stack_reserve
+flystudio,wacatac,86,section_size_hash05,-7588.193103448276,-3006.5116279069766,-47812.183103276235,0.09277033899944676,"section_size_hash05 (.reloc, petite, +98)"
+flystudio,wacatac,86,imports_function_hash0937,0.02528735632183908,0.011627906976744186,0.026110094794611675,0.4853821853361216,"imports_function_hash0937 (wininet.dll:DeleteUrlCacheEntry, oleaut32.dll:DispCallFunc, +75)"
+flystudio,wacatac,86,header_optional_major_linker_version,5.982758620689655,6.348837209302325,9.873773490769999,0.09408306080441978,header_optional_major_linker_version
+flystudio,wacatac,86,header_dos_e_lfanew,257.78850574712646,220.65116279069767,208.74239148511558,0.7571923589713173,header_dos_e_lfanew
+flystudio,wacatac,86,datadirectories_RESOURCE_rva,8123563.843678161,6205154.23255814,5674649.521204058,0.7833714693545831,datadirectories_RESOURCE_rva
+flystudio,wacatac,86,datadirectories_RESOURCE_size,157889.7264367816,407234.988372093,584398.0545484783,0.5846199136116547,datadirectories_RESOURCE_size
+flystudio,wacatac,86,header_optional_sizeof_code,1263970.8689655173,786164.0930232558,2240561.8538167304,0.2472858162052904,header_optional_sizeof_code
+flystudio,wacatac,86,richheader_hash22,-117.55402298850575,-40.80232558139535,-1.553467487111259,0.6616493953443846,"richheader_hash22 (730678, 663528, +59)"
+flystudio,wacatac,86,header_optional_sizeof_uninitialized_data,538581.6275862069,90933.58139534884,850739.1054382172,0.370737274895139,header_optional_sizeof_uninitialized_data
+flystudio,wacatac,86,section_vsize_ratio_max,2.3530938270790824,19.22755416742591,3712.9967592103885,0.004547583077774108,section_vsize_ratio_max
+flystudio,wacatac,86,header_optional_major_operating_system_version,4.118390804597701,4.337209302325581,4.733078330284384,0.35598330628791014,header_optional_major_operating_system_version
+flystudio,wacatac,86,header_optional_minor_linker_version,0.6057471264367816,4.965116279069767,16.933477465491436,0.2669917411733409,header_optional_minor_linker_version
+flystudio,wacatac,86,histogram_byte_0x5f,0.0034677586725801925,0.0035196076841689213,0.0037685478096306053,0.17237660939875887,histogram_byte_0x5f
+flystudio,wacatac,86,richheader_hash10,167.77816091954023,60.19767441860465,1.9269915183768502,0.6486567860170961,"richheader_hash10 (665142, 8111655, +55)"
+flystudio,wacatac,86,imports_function_hash0868,0.013793103448275862,0.0,0.03176451022783968,0.3027617632990106,"imports_function_hash0868 (shell32.dll:SHChangeNotify, mfc42.dll:MFC42.DLL:ordinal535, +93)"
+flystudio,wacatac,86,strings_char_0x5f,0.012867062791680848,0.00982476828679399,0.013502777528772934,0.45270193424005806,strings_char_0x5f
+flystudio,wacatac,86,imports_function_hash0292,0.0,0.023255813953488372,0.016796939963412607,0.7826369907588182,"imports_function_hash0292 (crtdll.dll:raise, msvcp140.dll:?_Getgloballocale@locale@std@@CAPAV_Locimp@12@XZ, +69)"
+flystudio,wacatac,86,strings_char_0x62,0.008350147359523436,0.009010732079839854,0.009105506508529827,0.87453064040511,strings_char_0x62
+flystudio,wacatac,86,imports_function_hash0780,0.0011494252873563218,0.0,0.010643605521370364,0.09746648728380854,"imports_function_hash0780 (crtdll.dll:_stricmp, rsaenh.dll:CPEncrypt, +99)"
+flystudio,wacatac,86,header_coff_timestamp,1463912173.4275863,1318078038.6976745,1426102682.9328122,0.5744695350874188,header_coff_timestamp
+flystudio,wacatac,86,strings_char_0x61,0.019399278702939615,0.016520977768841264,0.024789648372498575,0.25821371520949177,strings_char_0x61
+flystudio,wacatac,86,richheader_hash04,34.95632183908046,16.27906976744186,2.1250623648761016,0.5688862495912892,"richheader_hash04 (924803, 17134930, +45)"
+flystudio,wacatac,86,header_characteristic_DEBUG_STRIPPED,0.034482758620689655,0.011627906976744186,0.10111425245301846,0.2034414108965547,header_characteristic_DEBUG_STRIPPED
+flystudio,wacatac,86,imports_function_hash0412,0.005747126436781609,0.011627906976744186,0.048727756527523695,0.13682397227650883,"imports_function_hash0412 (crtdll.dll:strchr, kernel32.dll:FreeResource, +64)"
+flystudio,wacatac,86,imports_library_hash218,0.005747126436781609,0.023255813953488372,0.01962414768002661,0.8282116605280894,"imports_library_hash218 (mpr.dll, atwbxui15.dll, +2)"
+flystudio,wacatac,86,richheader_hash09,0.034482758620689655,0.2558139534883721,0.0334275735905538,0.49881097223758436,"richheader_hash09 (860137, 8307863, +48)"
+flystudio,wacatac,86,richheader_hash07,-87.59655172413792,-43.19767441860465,0.534508564776318,0.5037824027077782,"richheader_hash07 (729064, 663407, +57)"
+flystudio,wacatac,86,byteentropy_H09_hia,0.00035575817475762766,0.00019888968198377232,0.0007288103978598092,0.22840849972327235,byteentropy_H09_hia

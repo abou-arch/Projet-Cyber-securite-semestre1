@@ -13,6 +13,9 @@ caractéristiques statiques **déjà extraites**, sans jamais exécuter ni manip
 
 Ce document explique comment **installer le dataset** et le préparer pour scikit-learn.
 
+**Débutants :** commencez par [GUIDE_DEBUTANT.txt](GUIDE_DEBUTANT.txt). Il explique le projet
+simplement, donne les commandes pour Windows et macOS, et contient un glossaire.
+
 ---
 
 ## 1. Le dataset EMBER2024
@@ -135,7 +138,7 @@ vectorise ensuite ces échantillons dans `data/processed/ember2024_Win32_top10/`
 | `y_train.npy`, `y_test.npy`       | indice de la famille de chaque ligne                        |
 | `families.txt`                    | nom de la famille pour chaque indice (ligne `i` ↔ `y = i`)  |
 | `feature_names.txt`               | nom des 2568 colonnes                                       |
-| `meta_train.csv`, `meta_test.csv` | `sha256`, date de première soumission, type, famille et confiance de chaque ligne |
+| `meta_train.csv`, `meta_test.csv` | `sha256`, date de première soumission, type, famille, confiance et position dans les archives de chaque ligne |
 | `family_counts.csv`               | effectifs de **toutes** les familles, train et test         |
 | `dataset_info.json`               | paramètres et statistiques, pour le rapport                 |
 
@@ -147,11 +150,19 @@ Options utiles :
   10 familles et réduit le déséquilibre entre familles. `0` garde tout, mais les familles
   les plus fréquentes comptent des dizaines de milliers d'échantillons.
 - `--min-confidence 0.5` : ignore les étiquettes de famille peu sûres.
+- `--families berbew cosmu …` : familles à classer, dans cet ordre (`y = 0, 1…`), au lieu des
+  plus fréquentes. Sert à garder les familles d'un autre jeu dans une variante (§ 4.5).
 - `--file-types Win32` : restreint la préparation à certains types téléchargés.
 - `--jobs K` : nombre de processus. Par défaut, tous les cœurs sont utilisés.
 
 Les malwares du test qui appartiennent à d'autres familles sont écartés. Leur nombre est
 indiqué dans `dataset_info.json`.
+
+Les archives d'EMBER2024 répètent des lignes : chaque fichier (`sha256`) n'est gardé qu'une
+fois, et un fichier du test déjà présent dans le train est écarté (sinon le modèle serait
+évalué sur des fichiers qu'il a appris). Le nombre de lignes en double est aussi indiqué dans
+`dataset_info.json`. Un jeu préparé avant cette correction est refusé par `load_dataset` :
+relance alors `prepare` avec la même commande.
 
 ### 4.4 Vérifier l'installation
 
@@ -162,6 +173,72 @@ python -m malware_family.dataset data/processed/ember2024_Win32_top10
 La commande affiche la taille des matrices et le nombre d'échantillons par famille. Elle
 vérifie aussi qu'aucune valeur n'est aberrante (infinie ou manquante). Si elle se termine par
 « Installation vérifiée », le dataset est prêt.
+
+Avec plusieurs dossiers, elle vérifie chacun puis compare leurs effectifs famille par famille.
+
+### 4.5 Variantes du jeu de données
+
+Les variantes servent aux expériences de la section Résultats. Chacune a **son propre
+dossier** : ne réutilise jamais celui du jeu de référence. Sans `--out-dir`, le nom du dossier
+par défaut indique la variante (`…_conf0.5`, `…_top20`). Les commandes ci-dessous suivent la
+convention de l'équipe (`C:\ember2024`, ou `~/ember2024` sous macOS), et chacun les relance chez
+soi. Compte environ 7 minutes par variante, et 1 à 2 Go sur le disque.
+
+**Référence** (déjà préparée) : 10 familles les plus fréquentes, toutes les étiquettes.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10
+```
+
+**Variante A, étiquettes sûres, mêmes familles** (expérience de B) : mêmes 10 familles, dans le
+même ordre (mêmes `y`), mais seulement les étiquettes de confiance ≥ 0,5. Elle mesure l'effet
+du bruit d'étiquetage, à familles égales.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05 --min-confidence 0.5 --families berbew cosmu wacatac sfone upatre grandoreiro glupteba expiro sinowal flystudio
+```
+
+Résultat obtenu : 60 732 fichiers en train et 21 546 en test. Plusieurs familles passent sous le
+plafond de 10 000 dans le train : 148 wacatac, 761 sinowal, 1 052 grandoreiro, 3 799 glupteba et
+4 972 flystudio. Le train devient donc déséquilibré : il faut `class_weight="balanced"` ou une
+métrique par famille. Dans le test, il ne reste que 4 sinowal et 28 sfone.
+
+**Variante B, étiquettes sûres, familles recalculées** (optionnelle) : les 10 familles les plus
+fréquentes **parmi les étiquettes sûres**. La liste change : wacatac, grandoreiro et sinowal sont
+remplacées par floxif, urelas et eggnog. Les scores ne sont donc pas directement comparables à la
+référence, et eggnog n'a que 2 fichiers de test (73 376 en train, 24 322 en test au total).
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10_conf05_top --min-confidence 0.5
+```
+
+**Variante C, 20 familles** (optionnelle) : problème plus difficile. Avec le plafond par défaut,
+`X_train` passe à 200 000 lignes (environ 2 Go). Sur un ordinateur de 8 Go de mémoire, ajoute
+`--max-per-family 5000` pour rester à 100 000 lignes.
+
+```bash
+python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top20 --top-families 20
+```
+
+Résultat obtenu : 162 778 fichiers en train (1,7 Go) et 39 513 en test. Les 10 premières familles
+et leurs `y` sont ceux de la référence. Les 10 ajoutées ont de 4 632 à 8 987 fichiers en train.
+
+**Vérifier et comparer** : la commande vérifie chaque jeu puis affiche un tableau des effectifs
+train / test par famille, un jeu par colonne.
+
+```bash
+python -m malware_family.dataset C:\ember2024\processed\Win32_top10 C:\ember2024\processed\Win32_top10_conf05 C:\ember2024\processed\Win32_top20
+```
+
+À vérifier pour chaque variante, et à noter dans le rapport :
+
+- la liste des familles et leurs effectifs (train et test) ;
+- dans `dataset_info.json` : `min_confidence`, `requested_families`, `duplicate_lines`, et
+  `test_malware_seen_in_train`, qui doit rester à 0 ;
+- les mêmes chiffres sur les trois machines (A, B et C).
+
+Les notebooks lisent un autre jeu si la variable `EMBER_DATASET` pointe vers son dossier. Pour
+nommer les colonnes hachées d'une variante, lance `python -m scripts.hash_lookup index <dossier>`.
 
 ## 5. Utiliser les données avec scikit-learn
 
@@ -185,7 +262,115 @@ Pour l'analyse d'importance, `data.feature_names[j]` donne le nom de la colonne 
 `CATEGORICAL_FEATURES` liste les colonnes qui sont des codes et non des quantités : type de
 machine, sous-système, premiers octets.
 
-## 6. Sécurité
+## 6. Exploration et outils communs
+
+### 6.1 Notebooks d'exploration
+
+```bash
+jupyter lab notebooks/01_exploration.ipynb
+```
+
+- `01_exploration.ipynb` : effectifs par famille, échantillons par semaine, confiance des
+  étiquettes, features constantes (liste écrite dans `results/` pour l'équipe modèles),
+  malwares du test d'autres familles.
+- `02_features.ipynb` : ce que mesurent les 2568 colonnes, puis comparaison des familles sur
+  12 features lisibles (boîtes à moustaches).
+
+Les notebooks trouvent seuls le jeu préparé s'il est dans l'un des dossiers conseillés :
+`data/processed/ember2024_Win32_top10` (dans le projet), `C:\ember2024\processed\Win32_top10` ou
+`~/ember2024/processed/Win32_top10`. Si tes données sont ailleurs, indique leur dossier dans la
+variable d'environnement `EMBER_DATASET` avant de lancer Jupyter :
+
+```bash
+set EMBER_DATASET=C:\ember2024\processed\Win32_top10        # Windows (cmd)
+$env:EMBER_DATASET = "C:\ember2024\processed\Win32_top10"   # Windows (PowerShell)
+export EMBER_DATASET=~/ember2024/processed/Win32_top10       # macOS / Linux
+```
+
+Avant de commiter un notebook, vide ses sorties (*Kernel → Restart Kernel and Clear Outputs*) :
+les figures sont déjà enregistrées dans `results/figures/`.
+
+### 6.2 Noms réels derrière les colonnes hachées
+
+Une colonne `…_hashNN` regroupe plusieurs noms (§ 1). `scripts/hash_lookup.py` les retrouve,
+avec la même formule que scikit-learn : `abs(murmurhash3_32(texte, seed=0)) % n`.
+
+```bash
+# Colonne d'un nom, sans données
+python -m scripts.hash_lookup colonne imports_function "KERNEL32.dll:VirtualAlloc"
+#   imports_function_hash0581  (signe +1)  <- kernel32.dll:VirtualAlloc
+
+# Index des noms présents dans le jeu préparé (relit une fois les archives du train)
+python -m scripts.hash_lookup index data/processed/ember2024_Win32_top10
+
+# Tous les noms derrière des colonnes : nombre d'échantillons, signe, familles principales
+python -m scripts.hash_lookup noms imports_function_hash0581 section_size_hash41
+```
+
+| Colonnes                                    | Texte haché                                         | Cases |
+|---------------------------------------------|-----------------------------------------------------|------:|
+| `imports_library_hashNNN`                   | bibliothèque en minuscules : `kernel32.dll`         |   256 |
+| `imports_function_hashNNNN`                 | `bibliothèque:fonction` : `kernel32.dll:VirtualAlloc` | 1024 |
+| `section_size/vsize/entropy_hashNN`         | nom de section : `.text`                            |    50 |
+| `section_props_hashNN`                      | `section:droit` : `.text:MEM_EXECUTE`               |    50 |
+| `section_entry_name_hashN`                  | section du point d'entrée                           |    10 |
+| `exports_function_hashNNN`                  | fonction exportée : `DllMain`                       |   128 |
+| `richheader_hashNN`                         | comp.id du Rich header (produit et build du compilateur) | 32 |
+
+- L'index `hash_lookup.csv` est écrit dans le dossier du jeu préparé, donc hors de git :
+  chacun le génère chez soi. `--data-dir` indique les archives si elles ont changé de dossier.
+- Pour les sections, les exports et le Rich header, scikit-learn ajoute la valeur d'un nom
+  avec le **signe** de son hash : un nom de signe -1 rend la colonne négative.
+- Dans un notebook :
+
+  ```python
+  from scripts.hash_lookup import load_index, names_for, readable_name
+
+  index = load_index("data/processed/ember2024_Win32_top10")
+  names_for("imports_function_hash0581", index)       # tableau de tous les noms de la case
+  readable_name("imports_function_hash0581", index)   # libellé court pour une figure
+  ```
+
+### 6.3 Conventions pour les figures et les fichiers
+
+```python
+from malware_family.figures import family_colors, new_figure, save_figure
+
+fig, ax = new_figure()                          # 16 x 9 cm, police 10 pt
+colors = family_colors(data.families)           # une couleur fixe par famille
+save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_confusion.png
+```
+
+- Une figure = un PNG dans `results/figures/`, préfixé par le rôle (`A_`, `B_`, `C_`), en
+  minuscules, sans espace ni accent. `save_figure` refuse les autres noms.
+- Largeur 16 cm (pleine page) ou 8 cm (demi-page, `HALF_WIDTH`), 200 dpi, police 10 pt.
+- Une couleur par famille (`family_colors`), la même dans toutes les figures du rapport.
+- Titres et axes en français, unités entre parenthèses : « Taille (octets) ».
+
+### 6.4 Importance des features (rôle C)
+
+Sur le modèle final de B (`models/best_model.joblib`, produit par `python -m scripts.train`) :
+
+```bash
+python -m scripts.hash_lookup index C:\ember2024\processed\Win32_top10   # noms réels (une fois)
+python -m scripts.importance --max-rows 5000    # essai rapide (une minute environ)
+python -m scripts.importance --ablation         # calcul complet, environ 30 min
+```
+
+Le script mesure sur le test, avec le F1 macro :
+
+- le MDI de la forêt ;
+- la permutation par groupe (12 groupes, avec la baisse du F1 de chaque famille) ;
+- la permutation feature par feature des 50 meilleures du MDI ;
+- l'ablation (un groupe seul, tous sauf un) ;
+- les features qui rapprochent les fichiers mal classés de la famille prédite.
+
+Il vérifie aussi que le modèle donne les mêmes prédictions que `results/predictions_test.csv`.
+Résultats : `results/importances.csv`, `importances_groupes.csv`, `confusions_features.csv`,
+`ablation.csv`, `importance_info.json`, et les figures `results/figures/C_*.png`, commentées
+dans `notebooks/04_importance.ipynb`.
+
+## 7. Sécurité
 
 - EMBER2024 ne contient **que des caractéristiques extraites**. Aucun code malveillant n'est
   téléchargé, stocké ou exécuté.
@@ -196,7 +381,7 @@ machine, sous-système, premiers octets.
   correspondants depuis une plateforme d'analyse de malwares.
 - Le dossier `data/` est exclu de git (`.gitignore`) : ne versionne jamais les données.
 
-## 7. Dépannage
+## 8. Dépannage
 
 | Problème | Solution |
 |----------|----------|
@@ -217,7 +402,7 @@ machine, sous-système, premiers octets.
 `malware_family/ember_features.py` reproduit exactement sa vectorisation, sans ces
 dépendances. Les tests vérifient qu'elle donne des vecteurs identiques au bit près.
 
-## 8. Structure du dépôt
+## 9. Structure du dépôt
 
 ```
 malware_family/
@@ -225,10 +410,21 @@ malware_family/
   prepare.py         sélection des familles et vectorisation → data/processed/
   dataset.py         load_dataset() pour scikit-learn, et vérification de l'installation
   ember_features.py  vectorisation EMBER2024 (2568 features) et noms des features
+  figures.py         conventions communes pour les figures du rapport
+notebooks/           01_exploration, 02_features (A) ; 03_modeles (B) ; 04_importance (C)
+scripts/             hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
+results/             métriques, prédictions, importances, listes de features
+  figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
+rapport/             rapport (une section par fichier, voir rapport/README.md) et diapositives
 plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
+GUIDE_DEBUTANT.txt   explications pour débutants, commandes Windows et macOS, glossaire
 tests/               tests hors ligne sur des données synthétiques
 data/                (non versionné) raw/ = archives EMBER2024, processed/ = données préparées
+models/              (non versionné) modèles entraînés .joblib
 ```
+
+Chacun ne modifie que ses fichiers (voir `plan/`) : pas de conflit git. Jamais de données,
+de modèles ni de `.venv` dans git.
 
 ## Références
 
