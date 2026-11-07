@@ -1,0 +1,4 @@
+modele,accuracy,f1_macro
+Baseline,0.323,0.049
+LightGBM,0.977,0.912
+Random Forest,0.977,0.886
