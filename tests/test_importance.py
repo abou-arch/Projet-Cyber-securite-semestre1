@@ -2,6 +2,7 @@
 import json
 
 import joblib
+import lightgbm
 import numpy as np
 import pandas as pd
 import pytest
@@ -86,7 +87,7 @@ def test_main_writes_tables_and_figures(trained, tmp_path, capsys):
     results, figures = tmp_path / "results", tmp_path / "figures"
     importance.main(["--dataset", str(dataset), "--model", str(model_path), "--results-dir", str(results),
                      "--figures-dir", str(figures), "--n-repeats", "2", "--top", "4", "--pairs", "2",
-                     "--ablation", "--ablation-trees", "10"])
+                     "--ablation", "--ablation-trees", "10", "--shap-per-family", "0"])
     out = capsys.readouterr().out
     assert "Pas d'index des noms hachés" in out
 
@@ -118,3 +119,53 @@ def test_main_requires_a_model(trained, tmp_path):
     dataset = trained[0]
     with pytest.raises(SystemExit, match="scripts.train"):
         importance.main(["--dataset", str(dataset), "--model", str(tmp_path / "absent.joblib")])
+
+
+def _lightgbm(data):
+    model = lightgbm.LGBMClassifier(n_estimators=30, num_leaves=7, min_child_samples=5,
+                                    importance_type="gain", random_state=0, verbose=-1)
+    return model.fit(data.X_train, data.y_train)
+
+
+def test_shap_of_lightgbm_adds_up_to_its_raw_score(trained):
+    _, data, _, _ = trained
+    model = _lightgbm(data)
+    X = np.asarray(data.X_test[:20])
+    raw = model.predict(X, raw_score=True)
+    bias = model.predict(X, pred_contrib=True)[:, len(NAMES)::len(NAMES) + 1]
+    for k in range(len(FAMILIES)):
+        np.testing.assert_allclose(importance.shap_for_class(model, X, k).sum(axis=1) + bias[:, k],
+                                   raw[:, k], rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.parametrize("kind", ["lightgbm", "forest"])
+def test_shap_by_family_finds_the_signal(trained, kind):
+    _, data, forest, _ = trained
+    if kind == "forest":
+        pytest.importorskip("shap")
+    model = _lightgbm(data) if kind == "lightgbm" else forest
+    top, shares = importance.shap_by_family(model, np.asarray(data.X_test), data.y_test, NAMES, FAMILIES,
+                                            per_family=10, top=2)
+    assert list(shares.index) == FAMILIES and shares.columns[0] == "imports"
+    np.testing.assert_allclose(shares.sum(axis=1), 100)
+    assert (shares["imports"] > 50).all()  # seul « imports » distingue les familles
+    assert len(top) == 2 * len(FAMILIES) and set(top.n_fichiers) == {10}
+    assert set(top[top.rang == 1].group) == {"imports"}
+
+
+def test_main_with_lightgbm_writes_shap_and_gain(trained, tmp_path, capsys):
+    dataset, data, _, _ = trained
+    model_path = tmp_path / "lgbm.joblib"
+    joblib.dump(_lightgbm(data), model_path)
+    results, figures = tmp_path / "results", tmp_path / "figures"
+    importance.main(["--dataset", str(dataset), "--model", str(model_path), "--results-dir", str(results),
+                     "--figures-dir", str(figures), "--n-repeats", "2", "--top", "3",
+                     "--shap-per-family", "15"])
+    info = json.loads((results / "importance_info.json").read_text(encoding="utf-8"))
+    assert info["native_importance"] == "gain" and info["shap_per_family"] == 15
+    groups = pd.read_csv(results / "importances_groupes.csv")
+    assert groups.mdi_sum.sum() == pytest.approx(1)  # gain normalisé
+    shares = pd.read_csv(results / "shap_groupes_par_famille.csv", index_col="famille")
+    assert list(shares.index) == FAMILIES
+    assert (figures / "C_shap_groupes_par_famille.png").is_file()
+    assert "SHAP, indice principal" in capsys.readouterr().out

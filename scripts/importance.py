@@ -1,9 +1,10 @@
 """Importance des features du modèle final de B (rôle C).
 
-Quatre mesures, toutes sur le test (le modèle final a vu tout le train) :
+Cinq mesures, toutes sur le test (le modèle final a vu tout le train) :
 
-- **MDI** : ``model.feature_importances_`` de la forêt (baisse moyenne d'impureté). Rapide, mais
-  favorise les features continues aux nombreuses valeurs, et ne dit rien du test.
+- **Importance interne** : ``model.feature_importances_``, normalisée à 1. C'est le MDI pour une
+  forêt (baisse moyenne d'impureté), le gain pour LightGBM. Rapide, mais favorise les features
+  continues aux nombreuses valeurs, et ne dit rien du test. Colonnes ``mdi`` des tableaux.
 - **Permutation par groupe** : on mélange ensemble toutes les colonnes d'un groupe (imports,
   sections, chaînes…) et on mesure la baisse du F1 macro. ``permutation_importance`` de
   scikit-learn ne sait pas regrouper des colonnes, d'où la petite boucle ``permutation_drop``.
@@ -12,6 +13,9 @@ Quatre mesures, toutes sur le test (le modèle final a vu tout le train) :
   (sur les 2 568 colonnes, ce serait beaucoup trop long).
 - **Ablation** (``--ablation``, optionnelle et longue) : le modèle de B réentraîné avec un seul
   groupe, puis avec tous les groupes sauf un.
+- **SHAP par famille** (reprise de l'analyse de Kenneth) : pour des fichiers de chaque famille, la
+  contribution de chaque feature à la décision « cette famille ». Exacte et rapide pour LightGBM
+  (``pred_contrib``) ; pour une forêt, il faut le paquet ``shap`` (``pip install shap``), plus lent.
 
 S'y ajoutent les **confusions** : pour les paires de familles les plus confondues, les features
 sur lesquelles les fichiers mal classés ressemblent à la famille prédite.
@@ -25,7 +29,8 @@ Usage, depuis la racine du projet (après ``python -m scripts.train``) :
 Les colonnes hachées (``…_hashNN``) sont nommées avec l'index de ``scripts.hash_lookup`` s'il
 existe (``python -m scripts.hash_lookup index <jeu>``). Écrit dans ``results/`` :
 ``importances.csv``, ``importances_groupes.csv``, ``confusions_features.csv``, ``ablation.csv``
-(avec ``--ablation``), ``importance_info.json``, et les figures ``results/figures/C_*.png``.
+(avec ``--ablation``), ``shap_top_par_famille.csv``, ``shap_groupes_par_famille.csv``,
+``importance_info.json``, et les figures ``results/figures/C_*.png``.
 """
 from __future__ import annotations
 
@@ -69,6 +74,16 @@ def feature_groups_of(names):
             sorted(groups.items(), key=lambda item: order.get(item[0], len(order)))}
 
 
+def native_importance(model):
+    """(importance interne normalisée à 1, son nom) : MDI d'une forêt, gain de LightGBM."""
+    values = getattr(model, "feature_importances_", None)
+    if values is None:
+        return None, None
+    values = np.asarray(values, dtype=np.float64)
+    label = "gain" if hasattr(model, "booster_") else "MDI"
+    return (values / values.sum() if values.sum() > 0 else values), label
+
+
 def f1_scores(model, X, y, labels):
     """(F1 macro, F1 de chaque famille) des prédictions de ``model`` sur X."""
     per_family = f1_score(y, model.predict(X), labels=labels, average=None, zero_division=0)
@@ -100,10 +115,11 @@ def permutation_drop(model, X, y, columns, labels, n_repeats=5, random_state=RAN
 
 
 def group_importance(model, X, y, names, families, n_repeats=5, random_state=RANDOM_STATE):
-    """Une ligne par groupe : taille, somme du MDI, baisse du F1 macro et de chaque famille."""
+    """Une ligne par groupe : taille, somme de l'importance interne (``mdi_sum``), baisse du F1
+    macro et du F1 de chaque famille."""
     labels = list(range(len(families)))
     baseline = f1_scores(model, X, y, labels)
-    mdi = getattr(model, "feature_importances_", None)
+    mdi, _ = native_importance(model)
     rows = []
     for group, columns in tqdm(feature_groups_of(names).items(), desc="Permutation par groupe"):
         drops, family_drops = permutation_drop(model, X, y, columns, labels, n_repeats,
@@ -118,11 +134,12 @@ def group_importance(model, X, y, names, families, n_repeats=5, random_state=RAN
 
 def feature_importance(model, X, y, names, families, top=50, n_repeats=5, random_state=RANDOM_STATE,
                        index=None):
-    """Une ligne par feature : MDI et rang ; permutation pour les ``top`` meilleures du MDI."""
-    mdi = getattr(model, "feature_importances_", None)
+    """Une ligne par feature : importance interne (``mdi``) et rang ; permutation pour les ``top``
+    meilleures selon l'importance interne."""
+    mdi, _ = native_importance(model)
     if mdi is None:
-        raise SystemExit(f"{type(model).__name__} n'a pas de feature_importances_ : "
-                         "le choix des features à permuter s'appuie sur le MDI d'une forêt.")
+        raise SystemExit(f"{type(model).__name__} n'a pas de feature_importances_ : le choix des "
+                         "features à permuter s'appuie sur l'importance interne d'un modèle d'arbres.")
     labels = list(range(len(families)))
     baseline = f1_scores(model, X, y, labels)
     table = pd.DataFrame({"feature": names, "group": [name.split("_")[0] for name in names],
@@ -190,6 +207,64 @@ def ablation(model, data, groups, n_estimators=None):
     return pd.DataFrame(rows)
 
 
+def shap_for_class(model, X, k):
+    """Contributions SHAP (n, F) de chaque feature au score de la classe ``k``.
+
+    LightGBM les calcule lui-même, exactement (``pred_contrib`` : TreeSHAP, en log-odds). Pour un
+    autre modèle d'arbres (forêt), on passe par le paquet ``shap`` (en probabilité). Renvoie None
+    si ``shap`` n'est pas installé."""
+    position = list(model.classes_).index(k)
+    n_features = X.shape[1]
+    if hasattr(model, "booster_"):
+        contrib = np.asarray(model.predict(X, pred_contrib=True))
+        if contrib.shape[1] == n_features + 1:  # deux classes : une seule colonne de score
+            return contrib[:, :n_features] * (1 if position == 1 else -1)
+        start = position * (n_features + 1)
+        return contrib[:, start:start + n_features]
+    try:
+        import shap
+    except ImportError:
+        return None
+    values = shap.TreeExplainer(model).shap_values(X, check_additivity=False)
+    if isinstance(values, list):  # anciennes versions de shap : une matrice par classe
+        return np.asarray(values[position])
+    return np.asarray(values)[:, :, position]
+
+
+def shap_by_family(model, X, y, names, families, per_family=200, top=5, index=None,
+                   random_state=RANDOM_STATE):
+    """SHAP sur au plus ``per_family`` fichiers (tirés au hasard) de chaque famille, pour la décision
+    « cette famille ». Renvoie (top ``top`` features par famille, part de chaque groupe en %),
+    ou (None, None) si le modèle ne le permet pas.
+
+    ``shap_mean`` > 0 : la feature pousse vers la famille ; < 0 : elle en éloigne."""
+    rng = np.random.default_rng(random_state)
+    groups = feature_groups_of(names)
+    top_rows, shares = [], {}
+    for k, family in enumerate(tqdm(families, desc="SHAP par famille")):
+        rows = np.flatnonzero(y == k)
+        if not len(rows):
+            continue
+        rows = np.sort(rng.choice(rows, min(per_family, len(rows)), replace=False))
+        values = shap_for_class(model, X[rows], k)
+        if values is None:
+            return None, None
+        mean_abs, mean = np.abs(values).mean(axis=0), values.mean(axis=0)
+        total = mean_abs.sum()
+        for rank, j in enumerate(np.argsort(mean_abs)[::-1][:top], 1):
+            top_rows.append({"famille": family, "n_fichiers": len(rows), "rang": rank, "feature": names[j],
+                             "group": names[j].split("_")[0],
+                             "name": readable_name(names[j], index) if index is not None else names[j],
+                             "shap_abs_mean": mean_abs[j], "shap_mean": mean[j],
+                             "part_pct": 100 * mean_abs[j] / total if total else np.nan})
+        shares[family] = {group: 100 * mean_abs[columns].sum() / total if total else np.nan
+                          for group, columns in groups.items()}
+    table = pd.DataFrame.from_dict(shares, orient="index")
+    table = table[table.mean().sort_values(ascending=False).index]
+    table.index.name = "famille"
+    return pd.DataFrame(top_rows), table
+
+
 def _fr(value, digits=3):
     """Nombre avec une virgule décimale, comme dans le rapport (0,883)."""
     return f"{value:.{digits}f}".replace(".", ",")
@@ -199,16 +274,16 @@ def _short(text, width=58):
     return text if len(text) <= width else text[:width - 1] + "…"
 
 
-def plot_groups(groups, baseline_f1, figures_dir):
-    """Deux barres par groupe : baisse du F1 macro par permutation, et somme du MDI."""
+def plot_groups(groups, baseline_f1, figures_dir, native_label="MDI"):
+    """Deux barres par groupe : baisse du F1 macro par permutation, et importance interne."""
     table = groups.iloc[::-1]
     fig, (left, right) = new_figure(FULL_WIDTH, 9 * CM, ncols=2, sharey=True)
     left.barh(table.group, table.perm_f1_drop_mean, xerr=table.perm_f1_drop_std, color="tab:blue")
     left.set_xlabel("Baisse du F1 macro (permutation)")
     left.set_title(f"Sur le test (F1 macro {_fr(baseline_f1)})")
     right.barh(table.group, table.mdi_sum, color="tab:gray")
-    right.set_xlabel("Somme du MDI")
-    right.set_title("Dans la forêt (MDI)")
+    right.set_xlabel(f"Somme du {native_label}")
+    right.set_title(f"Dans le modèle ({native_label})")
     for ax in (left, right):
         ax.grid(axis="y", visible=False)
     left.set_yticks(range(len(table)), [f"{g} ({n})" for g, n in zip(table.group, table.n_features)])
@@ -273,6 +348,27 @@ def plot_ablation(table, full_f1, figures_dir):
     return save_figure(fig, "C_ablation", figures_dir)
 
 
+def plot_shap_groups(shares, test_counts, figures_dir):
+    """Carte de chaleur : part de chaque groupe (colonnes) dans les décisions de chaque famille."""
+    fig, ax = new_figure(FULL_WIDTH, 10 * CM)
+    image = ax.imshow(shares.to_numpy(), cmap="Blues", vmin=0, aspect="auto")
+    ax.set_xticks(range(shares.shape[1]), shares.columns, rotation=45, ha="right", fontsize=8)
+    ax.set_yticks(range(len(shares)), [f"{family} (n={test_counts.get(family, 0)})"
+                                       for family in shares.index], fontsize=8)
+    ax.grid(False)
+    limit = np.nanmax(shares.to_numpy())
+    for i in range(shares.shape[0]):
+        for j in range(shares.shape[1]):
+            value = shares.iat[i, j]
+            if value >= 1:
+                ax.text(j, i, f"{value:.0f}", ha="center", va="center", fontsize=7,
+                        color="white" if value > 0.6 * limit else "black")
+    fig.colorbar(image, ax=ax, label="Part de la contribution (%)")
+    ax.set_title("Quels groupes de features décident de chaque famille ? (SHAP, test)")
+    fig.tight_layout()
+    return save_figure(fig, "C_shap_groupes_par_famille", figures_dir)
+
+
 def _check_predictions(y_pred, data, path):
     """Part des prédictions identiques à results/predictions_test.csv (même modèle que B ?)."""
     if not path.is_file():
@@ -306,6 +402,9 @@ def main(argv=None):
                         help="réentraîne le modèle avec un seul groupe, puis sans un groupe (long)")
     parser.add_argument("--ablation-trees", type=int,
                         help="nombre d'arbres pour l'ablation (défaut : celui du modèle)")
+    parser.add_argument("--shap-per-family", type=int, default=200,
+                        help="fichiers du test par famille pour SHAP (défaut : 200 ; 0 : pas de SHAP). "
+                             "Pour une forêt, SHAP est lent : commencer par 50")
     parser.add_argument("--random-state", type=int, default=RANDOM_STATE,
                         help=f"graine (défaut : {RANDOM_STATE})")
     args = parser.parse_args(argv)
@@ -364,10 +463,24 @@ def main(argv=None):
     features.to_csv(args.results_dir / "importances.csv", index=False)
     groups.to_csv(args.results_dir / "importances_groupes.csv", index=False)
     confusions.to_csv(args.results_dir / "confusions_features.csv", index=False)
-    figures = [plot_groups(groups, baseline_f1, args.figures_dir),
+    native_label = native_importance(model)[1]
+    figures = [plot_groups(groups, baseline_f1, args.figures_dir, native_label),
                plot_top_features(features, args.figures_dir),
                plot_groups_by_family(groups, families, np.bincount(y, minlength=len(families)),
                                      args.figures_dir)]
+
+    shap_top = shap_shares = None
+    if args.shap_per_family > 0:
+        shap_top, shap_shares = shap_by_family(model, X, y, names, families, args.shap_per_family,
+                                               index=index, random_state=args.random_state)
+        if shap_top is None:
+            print(f"SHAP sauté : pour un modèle {type(model).__name__}, installez le paquet shap "
+                  "(python -m pip install shap), puis relancez.")
+        else:
+            shap_top.to_csv(args.results_dir / "shap_top_par_famille.csv", index=False)
+            shap_shares.round(2).to_csv(args.results_dir / "shap_groupes_par_famille.csv")
+            counts = dict(zip(families, np.bincount(y, minlength=len(families)).tolist()))
+            figures.append(plot_shap_groups(shap_shares, counts, args.figures_dir))
 
     ablation_table = None
     if args.ablation:
@@ -384,6 +497,8 @@ def main(argv=None):
             "baseline_f1_per_family": dict(zip(families, map(float, baseline_family))),
             "agreement_with_predictions_test": agreement, "hash_index": index is not None,
             "confused_pairs": [{"famille_reelle": a, "famille_predite": b, "n": n} for a, b, n in pairs],
+            "native_importance": native_label,
+            "shap_per_family": args.shap_per_family if shap_top is not None else 0,
             "ablation": args.ablation, "ablation_trees": args.ablation_trees,
             "duration_seconds": round(time.perf_counter() - start, 1)}
     (args.results_dir / "importance_info.json").write_text(
@@ -392,16 +507,22 @@ def main(argv=None):
     print(f"\nF1 macro de référence : {baseline_f1:.4f}\nGroupes (baisse du F1 macro par permutation) :")
     for row in groups.itertuples():
         print(f"  {row.group:<16}{row.n_features:>5} col.  {row.perm_f1_drop_mean:+.4f} "
-              f"± {row.perm_f1_drop_std:.4f}   MDI {row.mdi_sum:.3f}")
+              f"± {row.perm_f1_drop_std:.4f}   {native_label} {row.mdi_sum:.3f}")
     print("Features les plus importantes :")
     for row in features.head(10).itertuples():
         print(f"  {row.perm_f1_drop_mean:+.4f}  {row.name}")
+    if shap_top is not None:
+        print("SHAP, indice principal de chaque famille :")
+        for row in shap_top[shap_top.rang == 1].itertuples():
+            print(f"  {row.famille:<14} {row.name}  ({row.part_pct:.0f} % de la contribution, "
+                  f"{'pousse vers' if row.shap_mean > 0 else 'éloigne de'} la famille)")
     if ablation_table is not None:
         print("Ablation (F1 macro du test) :")
         print(ablation_table.pivot(index="group", columns="mode", values="test_f1_macro")
               .round(4).to_string())
     written = ["importances.csv", "importances_groupes.csv", "confusions_features.csv",
-               "importance_info.json"] + (["ablation.csv"] if args.ablation else [])
+               "importance_info.json"] + (["ablation.csv"] if args.ablation else []) + (
+        ["shap_top_par_famille.csv", "shap_groupes_par_famille.csv"] if shap_top is not None else [])
     print(f"\nÉcrits dans {args.results_dir} : {', '.join(written)}\nFigures : "
           + ", ".join(figure.name for figure in figures)
           + f"\n({info['duration_seconds']:.0f} s)")

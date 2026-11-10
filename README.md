@@ -347,7 +347,31 @@ save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_c
 - Une couleur par famille (`family_colors`), la même dans toutes les figures du rapport.
 - Titres et axes en français, unités entre parenthèses : « Taille (octets) ».
 
-### 6.4 Importance des features (rôle C)
+### 6.4 Modèle final (rôle B)
+
+```bash
+python -m scripts.train
+```
+
+Le script compare quatre candidats sur une validation temporelle (les 15 % de fichiers les plus
+récents du train) :
+
+- `DummyClassifier`, le plancher à battre ;
+- deux forêts aléatoires ;
+- LightGBM, avec les paramètres de Kenneth et un arrêt anticipé sur la validation.
+
+Le meilleur F1 macro de validation est réentraîné sur tout le train, puis évalué une seule fois
+sur le test. Résultats : `models/best_model.joblib` (hors de git), `results/metrics.json` et
+`results/predictions_test.csv`. `metrics.json` donne aussi le F1 macro sans les familles de
+moins de 30 fichiers dans le test : sinowal n'en a que 9, et un seul fichier fait bouger le F1
+macro de 0,01 à 0,03. `--candidates lightgbm` n'entraîne que LightGBM, par exemple pour
+l'analyser à part :
+
+```bash
+python -m scripts.train --candidates lightgbm --model models/lightgbm.joblib --results-dir results/lightgbm
+```
+
+### 6.5 Importance des features (rôle C)
 
 Sur le modèle final de B (`models/best_model.joblib`, produit par `python -m scripts.train`) :
 
@@ -359,16 +383,22 @@ python -m scripts.importance --ablation         # calcul complet, environ 30 min
 
 Le script mesure sur le test, avec le F1 macro :
 
-- le MDI de la forêt ;
+- l'importance interne du modèle, normalisée : MDI pour une forêt, gain pour LightGBM ;
 - la permutation par groupe (12 groupes, avec la baisse du F1 de chaque famille) ;
-- la permutation feature par feature des 50 meilleures du MDI ;
+- la permutation feature par feature des 50 meilleures selon l'importance interne ;
 - l'ablation (un groupe seul, tous sauf un) ;
-- les features qui rapprochent les fichiers mal classés de la famille prédite.
+- les features qui rapprochent les fichiers mal classés de la famille prédite ;
+- SHAP par famille, l'analyse de Kenneth : sur quels groupes et quelles features le modèle
+  s'appuie pour reconnaître chaque famille (200 fichiers par famille, `--shap-per-family`).
+
+SHAP est exact et rapide pour LightGBM. Pour une forêt, il faut le paquet `shap`
+(`python -m pip install shap`), et le calcul est lent : commence par `--shap-per-family 20`.
 
 Il vérifie aussi que le modèle donne les mêmes prédictions que `results/predictions_test.csv`.
 Résultats : `results/importances.csv`, `importances_groupes.csv`, `confusions_features.csv`,
-`ablation.csv`, `importance_info.json`, et les figures `results/figures/C_*.png`, commentées
-dans `notebooks/04_importance.ipynb`.
+`ablation.csv`, `shap_top_par_famille.csv`, `shap_groupes_par_famille.csv`,
+`importance_info.json`, et les figures `results/figures/C_*.png`, commentées dans
+`notebooks/04_importance.ipynb`.
 
 ## 7. Sécurité
 

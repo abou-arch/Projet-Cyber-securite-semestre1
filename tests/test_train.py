@@ -59,3 +59,29 @@ def test_train_selects_on_validation_and_writes_results(tmp_path):
     assert metrics["test_f1_macro"] == pytest.approx(
         f1_score(predictions.y_true, predictions.y_pred, average="macro"))
     assert set(metrics["test_per_family"]) >= set(data.families)
+
+
+def test_lightgbm_keeps_the_number_of_trees_found_by_early_stopping(tmp_path):
+    dataset = _write_dataset(tmp_path / "jeu")
+    model_path, results = tmp_path / "models" / "lgbm.joblib", tmp_path / "results"
+    train.main(["--dataset", str(dataset), "--model", str(model_path), "--results-dir", str(results),
+                "--candidates", "lightgbm"])
+
+    metrics = json.loads((results / "metrics.json").read_text(encoding="utf-8"))
+    assert [result["model"] for result in metrics["validation_results"]] == ["lightgbm"]
+    n_trees = metrics["validation_results"][0]["final_params"]["n_estimators"]
+    assert 1 <= n_trees < 1000  # arrêt anticipé sur un jeu aussi simple
+    model = joblib.load(model_path)
+    assert model.n_estimators == n_trees == metrics["selected_params"]["n_estimators"]
+    assert model.get_params()["importance_type"] == "gain"
+    assert metrics["small_families"] == {"min_test_support": train.SMALL_FAMILY,
+                                         "families": ["alpha", "beta", "gamma"]}  # moins de 30 fichiers
+
+
+def test_f1_macro_without_small_families():
+    y_true = np.array([0] * 40 + [1] * 40 + [2] * 3)
+    y_pred = np.array([0] * 40 + [1] * 40 + [0] * 3)  # la petite famille 2 est toujours ratée
+    without_small, small = train.f1_macro_without_small(y_true, y_pred, 3)
+    assert small == [2]
+    assert without_small == pytest.approx(f1_score(y_true, y_pred, labels=[0, 1], average="macro"))
+    assert without_small > f1_score(y_true, y_pred, average="macro")
