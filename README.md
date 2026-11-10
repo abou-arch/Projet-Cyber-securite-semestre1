@@ -447,6 +447,7 @@ results/             métriques, prédictions, importances, listes de features
   figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
 rapport/             rapport (une section par fichier, voir rapport/README.md) et diapositives
 plan/                répartition du travail à trois : A (données), B (modèles), C (importance)
+AVANCEMENT.md        checklist de l'avancement de l'équipe, à cocher au fil de l'eau
 GUIDE_DEBUTANT.txt   explications pour débutants, commandes Windows et macOS, glossaire
 tests/               tests hors ligne sur des données synthétiques
 data/                (non versionné) raw/ = archives EMBER2024, processed/ = données préparées
