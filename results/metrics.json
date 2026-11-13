@@ -1,0 +1,42 @@
+{
+  "selected_model": "rf_300_depth_none",
+  "validation_f1_macro": 0.9563297251211784,
+  "test_f1_macro": 0.8854463046602881,
+  "test_accuracy": 0.9743440610055577,
+  "test_balanced_accuracy": 0.895125868444634,
+  "validation_results": [
+    {
+      "model": "dummy",
+      "f1_macro_validation": 0.00015987210231814547,
+      "accuracy_validation": 0.0008,
+      "balanced_accuracy_validation": 0.1,
+      "duration_seconds": 0.06
+    },
+    {
+      "model": "rf_200_depth20",
+      "f1_macro_validation": 0.9540447584129603,
+      "accuracy_validation": 0.9766,
+      "balanced_accuracy_validation": 0.9626561743275597,
+      "duration_seconds": 32.97
+    },
+    {
+      "model": "rf_300_depth_none",
+      "f1_macro_validation": 0.9563297251211784,
+      "accuracy_validation": 0.9788666666666667,
+      "balanced_accuracy_validation": 0.9653020184335585,
+      "duration_seconds": 54.67
+    }
+  ],
+  "families": [
+    "berbew",
+    "cosmu",
+    "wacatac",
+    "sfone",
+    "upatre",
+    "grandoreiro",
+    "glupteba",
+    "expiro",
+    "sinowal",
+    "flystudio"
+  ]
+}
