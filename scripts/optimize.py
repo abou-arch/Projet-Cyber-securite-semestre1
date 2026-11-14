@@ -15,10 +15,11 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 
 from malware_family.dataset import load_dataset
+from malware_family.ember_features import CATEGORICAL_FEATURES
 
 DATA_DIR = ROOT / "data" / "processed" / "ember2024_Win32_top10"
 RESULTS_DIR = ROOT / "results"
@@ -54,6 +55,18 @@ print(f"Entraînement : {len(fit_idx)} ; validation : {len(val_idx)}", flush=Tru
 X_fit = np.asarray(data.X_train)[fit_idx]
 X_val = np.asarray(data.X_train)[val_idx]
 
+# Colonnes catégorielles utilisables par HistGradientBoosting : il exige au plus 255
+# catégories par colonne (max_bins), codées par des entiers de 0 à 254 (anciennes
+# versions de scikit-learn). Les premiers octets du fichier peuvent prendre 256 valeurs :
+# une colonne qui ne respecte pas cette limite est gardée comme numérique.
+categorical = []
+for j in CATEGORICAL_FEATURES:
+    values = np.unique(X_fit[:, j])
+    if len(values) <= 255 and values.min() >= 0 and values.max() < 255 \
+            and np.all(values == np.round(values)):
+        categorical.append(j)
+print(f"Colonnes catégorielles pour HistGradientBoosting : {categorical}", flush=True)
+
 candidates = [
     ("dummy", DummyClassifier(strategy="prior")),
     ("rf_200_depth20", RandomForestClassifier(
@@ -65,6 +78,19 @@ candidates = [
         n_estimators=300, max_depth=None, min_samples_leaf=2,
         max_features="sqrt", class_weight="balanced_subsample",
         n_jobs=-1, random_state=42
+    )),
+    # Deuxième modèle réglé, demandé par le plan (scikit-learn >= 1.2 pour class_weight).
+    # Les colonnes catégorielles (type de machine, sous-système, premiers octets) sont
+    # déclarées comme telles, comme en phase 1 (voir « categorical » ci-dessus).
+    ("hgb_lr0.1_leaves31", HistGradientBoostingClassifier(
+        learning_rate=0.1, max_iter=200, max_leaf_nodes=31,
+        l2_regularization=0.0, class_weight="balanced",
+        categorical_features=categorical or None, random_state=42
+    )),
+    ("hgb_lr0.05_leaves63", HistGradientBoostingClassifier(
+        learning_rate=0.05, max_iter=300, max_leaf_nodes=63,
+        l2_regularization=1.0, class_weight="balanced",
+        categorical_features=categorical or None, random_state=42
     )),
 ]
 
