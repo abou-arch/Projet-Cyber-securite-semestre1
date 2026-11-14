@@ -8,6 +8,7 @@ if str(ROOT) not in sys.path:
 print("Script optimize.py démarré", flush=True)
 
 import json
+import os
 import time
 
 import joblib
@@ -21,7 +22,10 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from malware_family.dataset import load_dataset
 from malware_family.ember_features import CATEGORICAL_FEATURES
 
-DATA_DIR = ROOT / "data" / "processed" / "ember2024_Win32_top10"
+# Jeu préparé : variable d'environnement EMBER_DATASET si elle est définie (ex. le dossier
+# C:\ember2024\processed\Win32_top10 du plan), sinon le dossier du projet.
+DATA_DIR = Path(os.environ.get("EMBER_DATASET")
+                or ROOT / "data" / "processed" / "ember2024_Win32_top10").expanduser()
 RESULTS_DIR = ROOT / "results"
 MODELS_DIR = ROOT / "models"
 
