@@ -107,6 +107,8 @@ print(f"Réentraînement terminé en {time.time() - start:.1f} s", flush=True)
 
 print("Évaluation finale sur le test...", flush=True)
 test_pred = final_model.predict(data.X_test)
+# Probabilité de la famille prédite (demandée par le plan : « probabilité maximale »)
+test_proba_max = final_model.predict_proba(data.X_test).max(axis=1)
 test_f1 = f1_score(data.y_test, test_pred, average="macro", zero_division=0)
 
 metrics = {
@@ -130,6 +132,7 @@ predictions = pd.DataFrame({
     "y_pred": np.asarray(test_pred),
     "famille_reelle": [data.families[int(i)] for i in data.y_test],
     "famille_predite": [data.families[int(i)] for i in test_pred],
+    "proba_max": np.round(test_proba_max, 5),
 })
 if "sha256" in data.meta_test.columns:
     predictions.insert(0, "sha256", data.meta_test["sha256"].to_numpy())
