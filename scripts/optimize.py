@@ -13,6 +13,7 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
@@ -68,7 +69,7 @@ candidates = [
 ]
 
 scores = []
-best_name, best_score, best_params = None, -1.0, None
+best_name, best_score, best_model = None, -1.0, None
 
 for name, model in candidates:
     print(f"\nÉvaluation de {name}...", flush=True)
@@ -90,20 +91,23 @@ for name, model in candidates:
     print(row, flush=True)
 
     if score > best_score:
-        best_name, best_score = name, score
-        best_params = model.get_params()
+        best_name, best_score, best_model = name, score, model
 
 print(f"\nMeilleur modèle en validation : {best_name}", flush=True)
 
-if best_name == "dummy":
-    final_model = DummyClassifier(strategy="prior")
-else:
-    final_model = RandomForestClassifier(**best_params)
+# Copie non entraînée du meilleur candidat, avec exactement les mêmes paramètres
+# (fonctionne pour tous les types de modèles, pas seulement la forêt aléatoire).
+final_model = clone(best_model)
+best_params = final_model.get_params()
+
+# Libère la mémoire des matrices de validation avant le réentraînement.
+del X_fit, X_val
 
 print("Réentraînement sur tout le train...", flush=True)
 start = time.time()
 final_model.fit(data.X_train, data.y_train)
-print(f"Réentraînement terminé en {time.time() - start:.1f} s", flush=True)
+final_duration = round(time.time() - start, 2)
+print(f"Réentraînement terminé en {final_duration:.1f} s", flush=True)
 
 print("Évaluation finale sur le test...", flush=True)
 test_pred = final_model.predict(data.X_test)
@@ -113,6 +117,10 @@ test_f1 = f1_score(data.y_test, test_pred, average="macro", zero_division=0)
 
 metrics = {
     "selected_model": best_name,
+    "selected_model_type": type(final_model).__name__,
+    "selected_params": {k: v if isinstance(v, (bool, int, float, str, type(None), list)) else str(v)
+                        for k, v in best_params.items()},
+    "final_training_seconds": final_duration,
     "validation_f1_macro": float(best_score),
     "test_f1_macro": float(test_f1),
     "test_accuracy": float(accuracy_score(data.y_test, test_pred)),
