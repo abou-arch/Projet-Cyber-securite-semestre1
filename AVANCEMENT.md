@@ -26,7 +26,7 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 | 2. Variantes, modèle final, importance | 🔶 code prêt (6 candidats) ; modèle final à relancer sur les vraies données |
 | 3. Évaluation détaillée, interprétation | 🔶 code prêt (`evaluate.py`, `importance.py`) ; calculs et interprétation à faire |
 | 4. Rapport et soutenance | 🔶 sections et diapositives de A prêtes ; celles de B et C à rédiger |
-| 5. Interface web de démonstration | 🔶 en construction (voir plus bas) |
+| 5. Interface web de démonstration | 🔶 prête et testée ; à lancer sur le modèle final (voir plus bas) |
 
 ---
 
@@ -115,9 +115,10 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 ## Interface web de démonstration
 
 **But** : montrer le classifieur en direct pendant la soutenance, et tester le modèle à la main.
-**Responsable proposé** : A, avec B pour le chargement du modèle et C pour l'explication SHAP.
-**Outil proposé** : [Streamlit](https://streamlit.io) : une page web en Python pur, sans HTML ni
-JavaScript, lancée en local avec `streamlit run app/demo.py`.
+**Responsable** : A, avec B pour le chargement du modèle et C pour l'explication SHAP.
+**Outil** : [Streamlit](https://streamlit.io) : une page web en Python pur, lancée en local avec
+`python -m streamlit run app/demo.py` (README, § 6.6). Style sombre inspiré de la page de
+référence choisie par A (fond noir, accent bleu-cyan, cartes à bord fin, halo bleu).
 
 ### Règles de sécurité (à respecter strictement)
 - L'interface ne reçoit **jamais d'exécutable** : uniquement des lignes du jeu préparé, ou une
@@ -142,14 +143,17 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
    malwares du test sont d'autres familles).
 
 ### Tâches
-- [ ] Choisir l'outil (Streamlit proposé) et l'ajouter à `requirements.txt`
-- [ ] `app/demo.py` : chargement du modèle, du jeu et de l'index des noms (mis en cache)
-- [ ] Page 1 : tester un fichier du test
-- [ ] Page 2 : analyser une ligne JSON (avec refus des fichiers binaires et limite de taille)
-- [ ] Page 3 : résultats et figures
-- [ ] Page 4 : seuil « famille inconnue » (seuil tiré de `results/rejet.csv`, étape `rejet` de B)
-- [ ] Tests automatiques (`streamlit.testing.v1.AppTest`) sur un petit jeu synthétique
-- [ ] Section « Lancer la démo » dans le README
+- [x] Outil choisi (Streamlit) et ajouté à `requirements.txt`, avec `shap` pour les explications
+- [x] `app/demo.py` (pages) et `app/core.py` (logique) : modèle, jeu et index des noms mis en cache ;
+      fonctionne avec une forêt, HistGradientBoosting ou LightGBM
+- [x] Page 1 : tester un fichier du test (au hasard, par famille ou par empreinte)
+- [x] Page 2 : analyser des lignes JSON (fichiers binaires refusés, 5 Mo au plus, exemple de 44 lignes)
+- [x] Page 3 : résultats et figures `A_`, `B_`, `C_`
+- [x] Page 4 : seuil « famille inconnue » réglable, sur le test et sur des familles jamais vues
+- [x] Tests automatiques (`streamlit.testing.v1.AppTest`) sur un petit jeu synthétique : 14 tests
+- [x] Section « Interface web de démonstration » dans le README (§ 6.6)
+- [ ] La lancer sur les vraies données avec le modèle final, et choisir le seuil par défaut avec B
+      (`results/rejet.csv`)
 - [ ] Scénario de démo pour la soutenance (2 minutes) : un fichier bien classé, une confusion
       vers wacatac, un fichier à faible confiance ; diapositive « Démo » dans `rapport/diapositives.md`
 - [ ] Copie d'écran de secours dans `results/figures/` si la démo ne marche pas le jour J
@@ -165,4 +169,5 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
    puis `python -m scripts.evaluate` ; pousser `results/` et les figures `B_`.
 4. **B** : sections 4 et 5, avec les chiffres de `results/metrics.json` et `results/evaluation.json`.
 5. **C** : interprétation dans le notebook 04 ; sections 6 et 7.
-6. **A** : interface web de démonstration (en cours) ; à relancer sur le modèle final une fois choisi.
+6. **A** : lancer l'interface sur les vraies données (`python -m streamlit run app/demo.py`) une fois
+   le modèle final entraîné, puis préparer le scénario de démo.

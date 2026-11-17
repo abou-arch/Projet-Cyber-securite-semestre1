@@ -1,0 +1,23 @@
+# Réglages de l'interface de démonstration (app/demo.py), lus quand on lance Streamlit depuis la
+# racine du projet. La page n'est servie qu'à cet ordinateur, et rien n'est envoyé à l'extérieur.
+
+[server]
+address = "localhost"     # jamais accessible depuis le réseau
+headless = true
+maxUploadSize = 5         # Mo : un fichier de features plus gros est refusé
+
+[client]
+toolbarMode = "minimal"   # pas de bouton « Deploy » : l'interface reste locale
+
+[browser]
+gatherUsageStats = false  # pas de statistiques d'usage envoyées à Streamlit
+serverAddress = "localhost"
+
+# Thème sombre inspiré de la page de référence (fond noir, accent bleu-cyan).
+[theme]
+base = "dark"
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#101010"
+textColor = "#F2F2F2"
+primaryColor = "#1CC2FF"
+font = "sans serif"

@@ -430,6 +430,34 @@ Résultats : `results/importances.csv`, `importances_groupes.csv`, `confusions_f
 `importance_info.json`, et les figures `results/figures/C_*.png`, commentées dans
 `notebooks/04_importance.ipynb`.
 
+### 6.6 Interface web de démonstration
+
+Pour tester le modèle à la main et pour la démo de la soutenance, depuis la racine du projet
+(après `python -m scripts.train`) :
+
+```bash
+python -m streamlit run app/demo.py
+```
+
+La page s'ouvre sur http://localhost:8501. Elle est servie à cet ordinateur seulement, sans
+statistiques d'usage (`.streamlit/config.toml`). Elle a quatre pages :
+
+| Page | Ce qu'elle montre |
+|---|---|
+| Tester un fichier du test | un fichier tiré au hasard (ou par son empreinte) : famille prédite, vraie famille, probabilités, et les 10 features qui ont le plus pesé (SHAP, avec leurs vrais noms) |
+| Analyser une ligne de features | des lignes JSON EMBER2024 déposées ou collées ; l'exemple `tests/data/exemple_ember2024.jsonl` contient 44 vraies lignes de familles hors des 10 |
+| Résultats du modèle | scores de `results/metrics.json` et figures `A_`, `B_`, `C_` |
+| Famille inconnue ? | effet du seuil « inconnue » sur le test, et sur les familles jamais vues de l'exemple |
+
+**Elle n'accepte jamais d'exécutable.** Un fichier binaire est refusé (exécutable PE ou ELF,
+archive, PDF), comme tout fichier de plus de 5 Mo. Les empreintes `sha256` restent de simples
+identifiants. Le seuil « famille inconnue » se règle dans la barre latérale.
+
+Les variables `EMBER_DATASET`, `EMBER_MODEL` et `EMBER_RESULTS` désignent un autre jeu, un
+autre modèle ou un autre dossier de résultats (par exemple une variante). L'explication SHAP
+d'une forêt aléatoire ou d'un HistGradientBoosting demande le paquet `shap` (dans
+`requirements.txt`) ; LightGBM la calcule lui-même.
+
 ## 7. Sécurité
 
 - EMBER2024 ne contient **que des caractéristiques extraites**. Aucun code malveillant n'est
@@ -473,6 +501,8 @@ malware_family/
   figures.py         conventions communes pour les figures du rapport
 notebooks/           01_exploration, 02_features (A) ; 03_modeles (B) ; 04_importance (C)
 scripts/             hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
+app/                 interface web de démonstration (Streamlit) : demo.py, et core.py (sa logique)
+.streamlit/          réglages de l'interface : en local seulement, thème sombre
 results/             métriques, prédictions, importances, listes de features
   figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
 rapport/             rapport (une section par fichier, voir rapport/README.md) et diapositives
