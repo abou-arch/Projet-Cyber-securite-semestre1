@@ -45,10 +45,12 @@ if __package__ in (None, ""):  # lancé par « python scripts/importance.py »
 
 import joblib
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch
 from sklearn.base import clone
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
 from tqdm import tqdm
 
@@ -84,6 +86,19 @@ def native_importance(model):
     return (values / values.sum() if values.sum() > 0 else values), label
 
 
+def preselection_importance(X_train, y_train, random_state=RANDOM_STATE, max_rows=20_000):
+    """Pour un modèle sans importance interne (HistGradientBoosting) : MDI d'une petite forêt
+    entraînée sur au plus ``max_rows`` lignes du train, normalisée à 1. Elle sert seulement à
+    choisir les features à permuter : les baisses de F1 sont toujours celles du vrai modèle."""
+    rows = np.arange(len(y_train))
+    if len(rows) > max_rows:
+        rows = np.sort(np.random.default_rng(random_state).choice(rows, max_rows, replace=False))
+    forest = RandomForestClassifier(n_estimators=100, max_depth=20, max_features="sqrt", n_jobs=-1,
+                                    random_state=random_state)
+    forest.fit(np.asarray(X_train[rows]), y_train[rows])
+    return native_importance(forest)[0]
+
+
 def f1_scores(model, X, y, labels):
     """(F1 macro, F1 de chaque famille) des prédictions de ``model`` sur X."""
     per_family = f1_score(y, model.predict(X), labels=labels, average=None, zero_division=0)
@@ -114,12 +129,13 @@ def permutation_drop(model, X, y, columns, labels, n_repeats=5, random_state=RAN
     return np.array(macro_drops), np.mean(family_drops, axis=0)
 
 
-def group_importance(model, X, y, names, families, n_repeats=5, random_state=RANDOM_STATE):
-    """Une ligne par groupe : taille, somme de l'importance interne (``mdi_sum``), baisse du F1
-    macro et du F1 de chaque famille."""
+def group_importance(model, X, y, names, families, n_repeats=5, random_state=RANDOM_STATE,
+                     native=None):
+    """Une ligne par groupe : taille, somme de l'importance interne (``mdi_sum`` ; ``native`` si
+    donnée, sinon celle du modèle), baisse du F1 macro et du F1 de chaque famille."""
     labels = list(range(len(families)))
     baseline = f1_scores(model, X, y, labels)
-    mdi, _ = native_importance(model)
+    mdi = native if native is not None else native_importance(model)[0]
     rows = []
     for group, columns in tqdm(feature_groups_of(names).items(), desc="Permutation par groupe"):
         drops, family_drops = permutation_drop(model, X, y, columns, labels, n_repeats,
@@ -133,13 +149,13 @@ def group_importance(model, X, y, names, families, n_repeats=5, random_state=RAN
 
 
 def feature_importance(model, X, y, names, families, top=50, n_repeats=5, random_state=RANDOM_STATE,
-                       index=None):
-    """Une ligne par feature : importance interne (``mdi``) et rang ; permutation pour les ``top``
-    meilleures selon l'importance interne."""
-    mdi, _ = native_importance(model)
+                       index=None, native=None):
+    """Une ligne par feature : importance interne (``mdi`` ; ``native`` si donnée, sinon celle du
+    modèle) et rang ; permutation pour les ``top`` meilleures selon cette importance."""
+    mdi = native if native is not None else native_importance(model)[0]
     if mdi is None:
-        raise SystemExit(f"{type(model).__name__} n'a pas de feature_importances_ : le choix des "
-                         "features à permuter s'appuie sur l'importance interne d'un modèle d'arbres.")
+        raise SystemExit(f"{type(model).__name__} n'a pas de feature_importances_ : donnez une "
+                         "importance de présélection (preselection_importance).")
     labels = list(range(len(families)))
     baseline = f1_scores(model, X, y, labels)
     table = pd.DataFrame({"feature": names, "group": [name.split("_")[0] for name in names],
@@ -265,6 +281,13 @@ def shap_by_family(model, X, y, names, families, per_family=200, top=5, index=No
     return pd.DataFrame(top_rows), table
 
 
+def _save(fig, name, figures_dir):
+    """Enregistre la figure puis la ferme (un calcul complet en crée plusieurs)."""
+    path = save_figure(fig, name, figures_dir)
+    plt.close(fig)
+    return path
+
+
 def _fr(value, digits=3):
     """Nombre avec une virgule décimale, comme dans le rapport (0,883)."""
     return f"{value:.{digits}f}".replace(".", ",")
@@ -288,7 +311,7 @@ def plot_groups(groups, baseline_f1, figures_dir, native_label="MDI"):
         ax.grid(axis="y", visible=False)
     left.set_yticks(range(len(table)), [f"{g} ({n})" for g, n in zip(table.group, table.n_features)])
     fig.tight_layout()
-    return save_figure(fig, "C_importance_par_groupe", figures_dir)
+    return _save(fig, "C_importance_par_groupe", figures_dir)
 
 
 def plot_top_features(features, figures_dir, n=20):
@@ -306,7 +329,7 @@ def plot_top_features(features, figures_dir, n=20):
                for g in shown]
     ax.legend(handles=handles, title="Groupe", loc="lower right", frameon=False)
     fig.tight_layout()
-    return save_figure(fig, "C_top_features", figures_dir)
+    return _save(fig, "C_top_features", figures_dir)
 
 
 def plot_groups_by_family(groups, families, test_counts, figures_dir):
@@ -327,7 +350,7 @@ def plot_groups_by_family(groups, families, test_counts, figures_dir):
     fig.colorbar(image, ax=ax, label="Baisse du F1 de la famille")
     ax.set_title("Groupes permutés (lignes) et familles touchées (colonnes)")
     fig.tight_layout()
-    return save_figure(fig, "C_importance_groupes_par_famille", figures_dir)
+    return _save(fig, "C_importance_groupes_par_famille", figures_dir)
 
 
 def plot_ablation(table, full_f1, figures_dir):
@@ -345,7 +368,7 @@ def plot_ablation(table, full_f1, figures_dir):
     ax.grid(axis="y", visible=False)
     ax.legend(loc="lower right", frameon=False)
     fig.tight_layout()
-    return save_figure(fig, "C_ablation", figures_dir)
+    return _save(fig, "C_ablation", figures_dir)
 
 
 def plot_shap_groups(shares, test_counts, figures_dir):
@@ -366,7 +389,7 @@ def plot_shap_groups(shares, test_counts, figures_dir):
     fig.colorbar(image, ax=ax, label="Part de la contribution (%)")
     ax.set_title("Quels groupes de features décident de chaque famille ? (SHAP, test)")
     fig.tight_layout()
-    return save_figure(fig, "C_shap_groupes_par_famille", figures_dir)
+    return _save(fig, "C_shap_groupes_par_famille", figures_dir)
 
 
 def _check_predictions(y_pred, data, path):
@@ -446,10 +469,16 @@ def main(argv=None):
         print(f"Attention : {agreement:.1%} seulement des prédictions sont celles de "
               "results/predictions_test.csv. Le modèle n'est pas celui de B : relancez scripts.train.")
 
+    native, native_label = native_importance(model)
+    if native is None:  # ex. HistGradientBoosting
+        print(f"{type(model).__name__} n'a pas d'importance interne : une petite forêt entraînée sur "
+              "le train choisit les features à permuter (les baisses de F1 restent celles du modèle).")
+        native, native_label = preselection_importance(data.X_train, data.y_train, args.random_state), \
+            "MDI de présélection"
     groups, (baseline_f1, baseline_family) = group_importance(model, X, y, names, families,
-                                                              args.n_repeats, args.random_state)
+                                                              args.n_repeats, args.random_state, native)
     features = feature_importance(model, X, y, names, families, args.top, args.n_repeats,
-                                  args.random_state, index)
+                                  args.random_state, index, native)
 
     top_features = list(features.dropna(subset=["perm_f1_drop_mean"]).feature[:30])
     pairs = confused_pairs(y, y_pred, families, args.pairs)
@@ -463,7 +492,6 @@ def main(argv=None):
     features.to_csv(args.results_dir / "importances.csv", index=False)
     groups.to_csv(args.results_dir / "importances_groupes.csv", index=False)
     confusions.to_csv(args.results_dir / "confusions_features.csv", index=False)
-    native_label = native_importance(model)[1]
     figures = [plot_groups(groups, baseline_f1, args.figures_dir, native_label),
                plot_top_features(features, args.figures_dir),
                plot_groups_by_family(groups, families, np.bincount(y, minlength=len(families)),
@@ -509,7 +537,7 @@ def main(argv=None):
         print(f"  {row.group:<16}{row.n_features:>5} col.  {row.perm_f1_drop_mean:+.4f} "
               f"± {row.perm_f1_drop_std:.4f}   {native_label} {row.mdi_sum:.3f}")
     print("Features les plus importantes :")
-    for row in features.head(10).itertuples():
+    for row in features.dropna(subset=["perm_f1_drop_mean"]).head(10).itertuples():
         print(f"  {row.perm_f1_drop_mean:+.4f}  {row.name}")
     if shap_top is not None:
         print("SHAP, indice principal de chaque famille :")

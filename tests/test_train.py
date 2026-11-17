@@ -85,3 +85,20 @@ def test_f1_macro_without_small_families():
     assert small == [2]
     assert without_small == pytest.approx(f1_score(y_true, y_pred, labels=[0, 1], average="macro"))
     assert without_small > f1_score(y_true, y_pred, average="macro")
+
+
+def test_categorical_columns_for_histgradientboosting():
+    X = np.zeros((4, 8), dtype=np.float32)
+    X[:, 2] = [0, 3, 3, 77]       # codes entiers de 0 à 254 : catégorielle
+    X[:, 3] = [0, 255, 1, 2]      # 255 dépasse la limite : reste numérique
+    X[:, 5] = [0.5, 1, 2, 3]      # pas un entier : reste numérique
+    assert train.usable_categorical(X, columns=[2, 3, 5, 40]) == [2]  # 40 : colonne absente
+
+    models = train.candidates(categorical=[2])
+    assert {name for name in models if name.startswith("hgb_")} == {"hgb_lr0.1_leaves31",
+                                                                    "hgb_lr0.05_leaves63"}
+    for name in ("hgb_lr0.1_leaves31", "hgb_lr0.05_leaves63"):
+        params = models[name].get_params()
+        assert params["categorical_features"] == [2]
+        assert params["class_weight"] is None  # avec des poids, scikit-learn 1.9 est des heures plus lent
+    assert train.candidates()["hgb_lr0.1_leaves31"].get_params()["categorical_features"] is None

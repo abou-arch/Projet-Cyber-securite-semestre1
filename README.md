@@ -353,12 +353,17 @@ save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_c
 python -m scripts.train
 ```
 
-Le script compare quatre candidats sur une validation temporelle (les 15 % de fichiers les plus
+Le script compare six candidats sur une validation temporelle (les 15 % de fichiers les plus
 récents du train) :
 
 - `DummyClassifier`, le plancher à battre ;
 - deux forêts aléatoires ;
+- deux `HistGradientBoosting` réglés par Bryce (colonnes catégorielles déclarées : type de
+  machine, sous-système, premiers octets ; sans `class_weight`, qui le rend des centaines de
+  fois plus lent avec scikit-learn 1.9, alors que le train est déjà équilibré) ;
 - LightGBM, avec les paramètres de Kenneth et un arrêt anticipé sur la validation.
+
+Compter de 20 à 40 minutes : les modèles de boosting sont les plus longs.
 
 Le meilleur F1 macro de validation est réentraîné sur tout le train, puis évalué une seule fois
 sur le test. Résultats : `models/best_model.joblib` (hors de git), `results/metrics.json` et
@@ -370,6 +375,31 @@ l'analyser à part :
 ```bash
 python -m scripts.train --candidates lightgbm --model models/lightgbm.joblib --results-dir results/lightgbm
 ```
+
+**Évaluation approfondie** (phase 3, écrite par Bryce) : `scripts/evaluate.py` analyse le modèle
+final sans en choisir un autre. Le test sert seulement à mesurer.
+
+```bash
+python -m scripts.evaluate                                         # les 7 étapes
+python -m scripts.evaluate --etapes confusion effectifs derive rejet   # sans réentraînement : 1 min
+```
+
+| Étape | Question | Sorties (`results/`) |
+|---|---|---|
+| `confusion` | Quelles familles sont confondues ? | `B_matrice_confusion.png` |
+| `effectifs` | Les familles plus fournies sont-elles mieux reconnues ? | `f1_par_famille.csv`, `B_f1_par_famille_effectifs.png` |
+| `derive` | Le score baisse-t-il au fil des semaines du test ? | `score_par_semaine.csv`, `B_score_par_semaine.png` |
+| `bruit` | Des étiquettes plus sûres aident-elles ? (variante `…_conf05`) | `B_bruit_etiquettes.png` |
+| `stabilite` | Le score dépend-il de la graine ? (3 graines) | `stabilite.csv` |
+| `reduit` | Un modèle réduit aux groupes importants selon C suffit-il ? | `modele_reduit.csv`, `B_modele_reduit.png` |
+| `rejet` | Et si le modèle répondait « inconnu » quand il hésite ? | `rejet.csv`, `B_rejet_couverture.png` |
+
+Tous les chiffres vont dans `results/evaluation.json`, étape par étape : relancer une étape ne
+fait pas perdre les autres. La variante à étiquettes sûres est cherchée à côté du jeu, avec le
+suffixe `_conf05` (ex. `C:\ember2024\processed\Win32_top10_conf05`, voir § 4.5) ; si elle
+manque, l'étape `bruit` est sautée. Les étapes `bruit`, `stabilite` et `reduit` réentraînent le
+modèle (de 10 à 30 minutes au total). `reduit` classe les groupes avec les résultats de C
+(`results/importances_groupes.csv`) : lancez donc `scripts.importance` avant.
 
 ### 6.5 Importance des features (rôle C)
 

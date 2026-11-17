@@ -169,3 +169,23 @@ def test_main_with_lightgbm_writes_shap_and_gain(trained, tmp_path, capsys):
     assert list(shares.index) == FAMILIES
     assert (figures / "C_shap_groupes_par_famille.png").is_file()
     assert "SHAP, indice principal" in capsys.readouterr().out
+
+
+def test_main_with_histgradientboosting_uses_a_preselection_forest(trained, tmp_path, capsys):
+    """HistGradientBoosting n'a pas de feature_importances_ : une petite forêt choisit les features
+    à permuter, mais les baisses de F1 sont celles du vrai modèle."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    dataset, data, _, _ = trained
+    model = HistGradientBoostingClassifier(max_iter=30, random_state=0).fit(data.X_train, data.y_train)
+    model_path = tmp_path / "hgb.joblib"
+    joblib.dump(model, model_path)
+    results = tmp_path / "results"
+    importance.main(["--dataset", str(dataset), "--model", str(model_path), "--results-dir", str(results),
+                     "--figures-dir", str(tmp_path / "figures"), "--n-repeats", "2", "--top", "3",
+                     "--shap-per-family", "0"])
+    assert "petite forêt" in capsys.readouterr().out
+    info = json.loads((results / "importance_info.json").read_text(encoding="utf-8"))
+    assert info["native_importance"] == "MDI de présélection"
+    features = pd.read_csv(results / "importances.csv")
+    assert features.perm_f1_drop_mean.notna().sum() == 3
+    assert features.feature[0] in ("imports_a", "imports_b")

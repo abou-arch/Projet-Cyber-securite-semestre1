@@ -4,9 +4,11 @@ Reprend le protocole et les paramètres du premier modèle de B (forêt aléatoi
 ``class_weight="balanced_subsample"``, ``random_state=42``), cette fois sur le jeu dédoublonné :
 
 - validation : les 15 % de lignes les plus récentes de X_train (lignes triées par date) ;
-- candidats : DummyClassifier (plancher à battre), deux forêts aléatoires et LightGBM (paramètres
-  de Kenneth) ; LightGBM s'arrête quand sa perte de validation ne baisse plus (arrêt anticipé),
-  et garde ce nombre d'arbres pour la suite ;
+- candidats : DummyClassifier (plancher à battre), deux forêts aléatoires, deux
+  HistGradientBoosting (réglages de Bryce, colonnes catégorielles déclarées, sans class_weight :
+  trop lent) et LightGBM
+  (paramètres de Kenneth) ; LightGBM s'arrête quand sa perte de validation ne baisse plus
+  (arrêt anticipé), et garde ce nombre d'arbres pour la suite ;
 - le meilleur F1 macro de validation est réentraîné sur tout le train, puis évalué sur le test.
 
 Le F1 macro donne le même poids à chaque famille, même à sinowal (9 fichiers du test) : un seul
@@ -43,10 +45,11 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, f1_score
 
 from malware_family.dataset import find_dataset, load_dataset
+from malware_family.ember_features import CATEGORICAL_FEATURES
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATION_FRACTION = 0.15
@@ -55,15 +58,41 @@ EARLY_STOPPING_ROUNDS = 50  # LightGBM s'arrête après 50 itérations sans prog
 SMALL_FAMILY = 30           # familles de moins de 30 fichiers du test : F1 trop instable
 
 
-def candidates(random_state=RANDOM_STATE):
-    """Modèles comparés sur la validation : paramètres du premier modèle de B, et LightGBM avec ceux
-    de Kenneth (``importance_type="gain"`` : feature_importances_ donne le gain de chaque feature)."""
+def usable_categorical(X, columns=CATEGORICAL_FEATURES):
+    """Colonnes de ``columns`` que HistGradientBoosting peut traiter comme catégorielles.
+
+    Il exige des entiers de 0 à 254 (255 catégories au plus). Les premiers octets du fichier
+    peuvent valoir 255 : une telle colonne reste numérique. Les indices sont ceux de X, sans
+    sélection de colonnes (sinon ils seraient décalés)."""
+    usable = []
+    for j in columns:
+        if j >= X.shape[1]:
+            continue
+        values = np.unique(np.asarray(X[:, j]))
+        if values.min() >= 0 and values.max() < 255 and np.all(values == np.round(values)):
+            usable.append(j)
+    return usable
+
+
+def candidates(random_state=RANDOM_STATE, categorical=None):
+    """Modèles comparés sur la validation : paramètres du premier modèle de B, HistGradientBoosting
+    réglé par Bryce (``categorical`` : colonnes catégorielles, voir ``usable_categorical``), et
+    LightGBM avec les paramètres de Kenneth (``importance_type="gain"`` : feature_importances_
+    donne le gain de chaque feature)."""
     forest = dict(max_features="sqrt", class_weight="balanced_subsample", n_jobs=-1,
                   random_state=random_state)
+    # Pas de class_weight pour HistGradientBoosting : avec des poids, scikit-learn (1.9) calcule
+    # des quantiles pondérés colonne par colonne, environ 150 fois plus lentement (des heures sur
+    # 2 568 colonnes). Le train est de toute façon équilibré (10 000 fichiers par famille au plus).
+    boosting = dict(categorical_features=categorical or None, random_state=random_state)
     return {
         "dummy": DummyClassifier(strategy="most_frequent"),
         "rf_200_depth20": RandomForestClassifier(n_estimators=200, max_depth=20, **forest),
         "rf_300_depth_none": RandomForestClassifier(n_estimators=300, max_depth=None, **forest),
+        "hgb_lr0.1_leaves31": HistGradientBoostingClassifier(
+            learning_rate=0.1, max_iter=200, max_leaf_nodes=31, l2_regularization=0.0, **boosting),
+        "hgb_lr0.05_leaves63": HistGradientBoostingClassifier(
+            learning_rate=0.05, max_iter=300, max_leaf_nodes=63, l2_regularization=1.0, **boosting),
         "lightgbm": lightgbm.LGBMClassifier(
             objective="multiclass", n_estimators=1000, learning_rate=0.1, num_leaves=63,
             colsample_bytree=0.5, subsample=0.8, subsample_freq=1, importance_type="gain",
@@ -78,8 +107,8 @@ def fit_on_validation(model, X_fit, y_fit, X_val, y_val):
     devient son ``n_estimators`` pour le réentraînement sur tout le train."""
     if isinstance(model, lightgbm.LGBMClassifier):
         # eval_X / eval_y depuis LightGBM 4.7, eval_set avant (encore accepté, mais déconseillé).
-        validation = ({"eval_X": X_val, "eval_y": y_val}
-                      if "eval_X" in inspect.signature(model.fit).parameters else {"eval_set": [(X_val, y_val)]})
+        new_api = "eval_X" in inspect.signature(model.fit).parameters
+        validation = {"eval_X": X_val, "eval_y": y_val} if new_api else {"eval_set": [(X_val, y_val)]}
         model.fit(X_fit, y_fit, **validation,
                   callbacks=[lightgbm.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False)])
         return {"n_estimators": int(model.best_iteration_ or model.n_estimators)}
@@ -137,9 +166,10 @@ def main(argv=None):
     print(f"Jeu : {path}\n  entraînement {cut} lignes, validation {n_train - cut} lignes "
           f"(à partir du {data.meta_train.first_seen.iloc[cut]}), test {len(data.y_test)} lignes")
 
+    categorical = usable_categorical(X_fit)  # pour HistGradientBoosting
     validation_results = []
     for name in names:
-        model = candidates(args.random_state)[name]
+        model = candidates(args.random_state, categorical)[name]
         start = time.perf_counter()
         final_params = fit_on_validation(model, X_fit, y_fit, X_val, y_val)
         duration = time.perf_counter() - start
@@ -154,7 +184,7 @@ def main(argv=None):
     best = max(validation_results, key=lambda result: result["f1_macro_validation"])
 
     # Le modèle choisi est réentraîné sur tout le train, puis évalué une seule fois sur le test.
-    model = candidates(args.random_state)[best["model"]].set_params(**best["final_params"])
+    model = candidates(args.random_state, categorical)[best["model"]].set_params(**best["final_params"])
     start = time.perf_counter()
     model.fit(data.X_train, data.y_train)
     training_seconds = time.perf_counter() - start
@@ -184,6 +214,7 @@ def main(argv=None):
         "n_samples": {"fit": cut, "validation": n_train - cut, "train": n_train, "test": len(data.y_test)},
         "selected_model": best["model"],
         "selected_params": model.get_params(),
+        "categorical_features": categorical,
         "validation_f1_macro": best["f1_macro_validation"],
         **{f"test_{metric}": value for metric, value in test.items()},
         "test_f1_macro_without_small_families": None if math.isnan(without_small) else without_small,

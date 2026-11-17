@@ -1,6 +1,6 @@
 # Avancement du projet
 
-*État au 10/11/2026, d'après les branches `Abou`, `Bryce`, `Kenneth` et `main`. Cochez les cases
+*État au 17/11/2026, d'après les branches `Abou`, `Bryce`, `phase3-evaluation`, `Kenneth` et `main`. Cochez les cases
 au fil de l'eau (`- [x]`) et mettez la date ci-dessus à jour.*
 
 Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
@@ -9,9 +9,10 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 
 | Branche | Dernier commit | État |
 |---|---|---|
-| `Abou` | 10/11 : LightGBM et SHAP intégrés | **branche de référence** : tout le travail commun y est |
+| `Abou` | 17/11 : évaluation de Bryce intégrée | **branche de référence** : tout le travail commun y est |
 | `main` | 26/09 : fichier d'exemple | ne contient rien du travail depuis le 26/09 ; la PR #3 (`Abou` → `main`) attend un relecteur |
-| `Bryce` | 09/10 : premier `train.py` | dépassée : son modèle a été repris et refait sur `Abou` (`scripts/train.py`) |
+| `phase3-evaluation` | 14/11 : `evaluate.py` (Bryce, compte `JimmyQuiRit`) | intégrée sur `Abou` ; **ne pas la fusionner** (partie d'un `Abou` du 24/10 : 9 conflits, `find_dataset` perdu, `.idea/` commité) |
+| `Bryce` | 09/10 : premier `train.py` | dépassée : remplacée par `phase3-evaluation` |
 | `Kenneth` | 07/11 : LightGBM, SHAP | intégrée sur `Abou` ; **ne pas la fusionner** (`K_01_exploration.py` cassé, modèle et `.DS_Store` commités) |
 
 À faire par chacun pour repartir sur la même base : `git checkout Abou` puis `git pull`.
@@ -22,8 +23,8 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 |---|---|
 | 0. Installation (mêmes données sur les 3 machines) | ✅ |
 | 1. Exploration, premiers modèles, outils | ✅ |
-| 2. Variantes, modèle final, importance | 🔶 modèle final à relancer avec LightGBM |
-| 3. Évaluation détaillée, interprétation | 🔶 calculs faits, interprétation et figures de B à faire |
+| 2. Variantes, modèle final, importance | 🔶 code prêt (6 candidats) ; modèle final à relancer sur les vraies données |
+| 3. Évaluation détaillée, interprétation | 🔶 code prêt (`evaluate.py`, `importance.py`) ; calculs et interprétation à faire |
 | 4. Rapport et soutenance | 🔶 sections de A en premier jet, celles de B et C à rédiger |
 | 5. Interface web de démonstration | ⬜ à construire (voir plus bas) |
 
@@ -42,7 +43,7 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 - [x] Rapport, premier jet : sections 1, 2, 3 et 8 ; squelette des autres sections ; bibliographie
 - [x] Trame des diapositives (18 diapositives, minutage)
 - [x] PR #3 ouverte (`Abou` → `main`)
-- [x] Relecture de B (`train.py`) et de C (branche `Kenneth`)
+- [x] Relecture et intégration sur `Abou` : B (`train.py`, puis `phase3-evaluation` le 17/11) et C (branche `Kenneth`)
 
 ### Reste à faire
 - [ ] Ajouter un relecteur à la PR #3 (C relit A), puis la fusionner
@@ -59,19 +60,24 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 ### Fait
 - [x] Premier modèle (Bryce, 09/10), repris sur le jeu dédoublonné : `scripts/train.py`
 - [x] Validation temporelle (15 % les plus récents du train), `random_state` fixé
-- [x] Candidats : Dummy, 2 forêts aléatoires, LightGBM (paramètres de Kenneth, arrêt anticipé)
+- [x] Candidats : Dummy, 2 forêts aléatoires, 2 HistGradientBoosting (Bryce, colonnes
+      catégorielles déclarées sans décalage d'indices ; sans `class_weight`, qui le rendait
+      des centaines de fois plus lent avec scikit-learn 1.9), LightGBM (Kenneth, arrêt anticipé)
 - [x] `results/metrics.json` et `results/predictions_test.csv` (forêt : F1 macro 0,883, exactitude 0,976)
 - [x] F1 macro sans les familles de moins de 30 fichiers du test (sinowal : 9 fichiers)
+- [x] `scripts/evaluate.py` (Bryce, 14/11, intégré le 17/11), 7 étapes : matrice de confusion,
+      F1 selon les effectifs, dérive par semaine, bruit des étiquettes, stabilité (3 graines),
+      modèle réduit (d'après C), rejet « inconnu » sous un seuil ; 7 tests
 
 ### Reste à faire
-- [ ] **Relancer `python -m scripts.train`** avec LightGBM, et noter le modèle retenu
+- [ ] **Relancer `python -m scripts.train`** (6 candidats, 20 à 40 min) et noter le modèle retenu
       (forêt : 0,962 sans sinowal ; LightGBM chez Kenneth : 0,964)
-- [ ] `scripts/evaluate.py` ou `notebooks/03_modeles.ipynb` :
-  - [ ] matrice de confusion normalisée → `results/figures/B_matrice_confusion.png`
-  - [ ] score par semaine du test → dérive temporelle (`B_score_par_semaine.png`)
-  - [ ] seuil de confiance : que se passe-t-il si on refuse de répondre quand `proba_max` est faible ?
-- [ ] Entraîner sur les variantes : `Win32_top10_conf05` (avec `class_weight`) et `Win32_top20`
-- [ ] Tester un modèle réduit avec les seules colonnes `header` (74 colonnes : F1 macro 0,894 en ablation)
+- [ ] **Lancer `python -m scripts.evaluate`** sur les vraies données (après `scripts.importance`,
+      pour que le modèle réduit suive le classement de C) et pousser `results/`
+- [ ] Préparer la variante `Win32_top10_conf05` sur sa machine si l'étape `bruit` la demande
+- [ ] Entraîner sur la variante `Win32_top20` (20 familles) : ce qui change
+- [ ] Interpréter : dérive (pente par semaine), confusions vers wacatac (avec C), seuil de rejet
+      à proposer pour la démo
 - [ ] Rédiger les sections 4 (méthodologie) et 5 (résultats) ; diapositives 9 à 12
 
 ## Rôle C : importance des features et interprétation
@@ -102,7 +108,7 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 
 ---
 
-## Interface web de démonstration (nouvelle partie)
+## Interface web de démonstration
 
 **But** : montrer le classifieur en direct pendant la soutenance, et tester le modèle à la main.
 **Responsable proposé** : A, avec B pour le chargement du modèle et C pour l'explication SHAP.
@@ -137,7 +143,7 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
 - [ ] Page 1 : tester un fichier du test
 - [ ] Page 2 : analyser une ligne JSON (avec refus des fichiers binaires et limite de taille)
 - [ ] Page 3 : résultats et figures
-- [ ] Page 4 : seuil « famille inconnue » (seuil choisi avec B sur la validation)
+- [ ] Page 4 : seuil « famille inconnue » (seuil tiré de `results/rejet.csv`, étape `rejet` de B)
 - [ ] Tests automatiques (`streamlit.testing.v1.AppTest`) sur un petit jeu synthétique
 - [ ] Section « Lancer la démo » dans le README
 - [ ] Scénario de démo pour la soutenance (2 minutes) : un fichier bien classé, une confusion
@@ -149,8 +155,10 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
 ## Prochaines actions (par ordre)
 
 1. **Tous** : `git checkout Abou` puis `git pull` ; `python -m pip install -r requirements.txt`.
-2. **A** : relancer `scripts.train` puis `scripts.importance --ablation`, pousser `results/`.
-3. **A** : ajouter C comme relecteur de la PR #3.
-4. **B** : matrice de confusion et score par semaine ; sections 4 et 5.
+   Ne plus travailler sur `Bryce`, `phase3-evaluation` ni `Kenneth` : tout est sur `Abou`.
+2. **A** : ajouter C comme relecteur de la PR #3.
+3. **B** : `python -m scripts.train`, puis `python -m scripts.importance --ablation` (ou A),
+   puis `python -m scripts.evaluate` ; pousser `results/` et les figures `B_`.
+4. **B** : sections 4 et 5, avec les chiffres de `results/metrics.json` et `results/evaluation.json`.
 5. **C** : interprétation dans le notebook 04 ; sections 6 et 7.
-6. **A** : commencer l'interface web (pages 1 et 3 d'abord, les plus utiles pour la démo).
+6. **A** : interface web, une fois le modèle final choisi (pages 1 et 3 d'abord).
