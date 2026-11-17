@@ -463,6 +463,43 @@ autre modèle ou un autre dossier de résultats (par exemple une variante). L'ex
 d'une forêt aléatoire ou d'un HistGradientBoosting demande le paquet `shap` (dans
 `requirements.txt`) ; LightGBM la calcule lui-même.
 
+### 6.7 Démo en ligne (GitHub Pages)
+
+GitHub Pages ne sert que des fichiers statiques : ni Python, ni le modèle, ni les données n'y
+tournent. La version en ligne, dans `docs/`, est une page HTML animée qui lit des résultats
+calculés à l'avance par le modèle final :
+
+```bash
+python -m scripts.export_demo        # -> docs/data/demo.json (environ 100 Ko)
+```
+
+Le fichier contient :
+
+- un échantillon de fichiers du test (20 par famille), avec la probabilité de chaque famille et
+  les features qui ont le plus pesé (SHAP) ;
+- la courbe du seuil « famille inconnue » ;
+- les 32 fichiers de familles jamais vues de l'exemple ;
+- les scores et l'importance des groupes.
+
+Il ne contient aucun exécutable, et seulement les 12 premiers caractères des empreintes.
+
+Pour publier :
+
+1. Lancer l'export sur le modèle final (après `scripts.train` et `scripts.importance`), puis
+   commiter `docs/data/demo.json`.
+2. Sur GitHub : *Settings → Pages → Build and deployment*, source *Deploy from a branch*, la
+   branche fusionnée (par exemple `main`) et le dossier `/docs`.
+3. La page est en ligne quelques minutes plus tard, à
+   `https://abou-arch.github.io/Projet-Cyber-securite-semestre1/`.
+
+GitHub Pages depuis un dépôt privé demande un compte payant (GitHub Pro ou une organisation
+« Team ») : sinon, le dépôt doit être public. Pour regarder la page en local :
+`python -m http.server --directory docs`, puis http://localhost:8000.
+
+Les animations (anneau qui tourne, apparitions au défilement, chiffres qui défilent, barres qui
+se remplissent, courbe qui se trace) sont coupées si l'ordinateur demande moins de mouvements
+(réglage d'accessibilité « réduire les animations »).
+
 ## 7. Sécurité
 
 - EMBER2024 ne contient **que des caractéristiques extraites**. Aucun code malveillant n'est
@@ -508,6 +545,7 @@ notebooks/           01_exploration, 02_features (A) ; 03_modeles (B) ; 04_impor
 scripts/             hash_lookup.py (A) ; train.py, evaluate.py (B) ; importance.py (C)
 app/                 interface web de démonstration (Streamlit) : demo.py, et core.py (sa logique)
 .streamlit/          réglages de l'interface : en local seulement, thème sombre
+docs/                démo statique pour GitHub Pages (HTML, CSS, JS) ; données : scripts/export_demo.py
 results/             métriques, prédictions, importances, listes de features
   figures/           figures PNG du rapport, préfixées par le rôle (A_, B_, C_)
 rapport/             rapport (une section par fichier, voir rapport/README.md) et diapositives

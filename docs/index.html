@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Familles de malwares — démo EMBER2024</title>
+<meta name="description" content="Reconnaître la famille d'un malware par analyse statique (EMBER2024, scikit-learn), sans jamais exécuter de fichier : démo interactive.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="stars" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <a class="logo" href="#top">EMBER<span>·</span>Familles</a>
+  <nav>
+    <a href="#chiffres">Résultats</a>
+    <a href="#demo">Démo</a>
+    <a href="#inconnu">Familles inconnues</a>
+    <a href="#importance">Ce qui compte</a>
+    <a href="#methode">Méthode</a>
+  </nav>
+  <a class="pill-button" href="https://github.com/abou-arch/Projet-Cyber-securite-semestre1" rel="noopener">Code source <span class="chevron">›</span></a>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="orbit" aria-hidden="true">
+      <div class="ring"></div><div class="ring ring-2"></div><div class="planet"></div>
+      <div class="scan"><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="hero-text">
+      <span class="badge"><span class="dot"></span>Projet cybersécurité · EMBER2024</span>
+      <h1><span class="line">Reconnaître une famille de malware,</span>
+          <span class="line accent">sans l'exécuter.</span></h1>
+      <p class="lead">Un modèle scikit-learn lit les caractéristiques statiques d'un fichier Windows
+        (en-têtes, imports, sections, octets) et en déduit sa famille. Aucun exécutable n'est
+        téléchargé ni lancé : tout part des features d'EMBER2024.</p>
+      <div class="cta">
+        <a class="button primary" href="#demo">Tester un fichier</a>
+        <a class="button ghost" href="#inconnu">Et si la famille était inconnue ?</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="notice hidden" id="notice" role="alert"></div>
+
+  <section id="chiffres" class="section">
+    <p class="eyebrow reveal">Le modèle en chiffres</p>
+    <h2 class="reveal">Ce que vaut le modèle, <span class="accent">sur le test.</span></h2>
+    <p class="sub reveal" id="model-line">Fichiers jamais vus pendant l'entraînement, plus récents que lui.</p>
+    <div class="stats">
+      <div class="stat reveal"><p class="stat-value" data-count="f1" data-digits="3">–</p><p class="stat-label">F1 macro</p></div>
+      <div class="stat reveal"><p class="stat-value" data-count="f1small" data-digits="3">–</p><p class="stat-label">F1 macro sans les familles de moins de 30 fichiers</p></div>
+      <div class="stat reveal"><p class="stat-value" data-count="acc" data-digits="3">–</p><p class="stat-label">Exactitude</p></div>
+      <div class="stat reveal"><p class="stat-value" data-count="ntest" data-digits="0">–</p><p class="stat-label">Fichiers du test</p></div>
+    </div>
+    <div class="card reveal">
+      <h3>F1 de chaque famille</h3>
+      <div class="bars" id="family-bars"></div>
+      <p class="caption">Le F1 macro donne le même poids à chaque famille : une famille de 9 fichiers pèse autant qu'une famille de 10 000.</p>
+    </div>
+  </section>
+
+  <section id="demo" class="section">
+    <p class="eyebrow reveal">Démo</p>
+    <h2 class="reveal">Un fichier du test, <span class="accent">et pourquoi.</span></h2>
+    <p class="sub reveal">Un fichier tiré au hasard dans l'échantillon. Le modèle donne la probabilité de chaque famille,
+      et SHAP montre les features qui ont le plus pesé dans sa décision.</p>
+    <div class="controls reveal">
+      <label>Famille <select id="family-select"><option value="">toutes</option></select></label>
+      <button class="button primary" id="draw">Tirer un fichier</button>
+    </div>
+    <div class="result reveal" id="result">
+      <div class="file-meta" id="file-meta">Tirez un fichier pour commencer.</div>
+      <div class="verdict">
+        <div class="verdict-box"><p class="stat-label">Famille prédite</p><p class="verdict-value" id="pred">–</p></div>
+        <div class="verdict-box"><p class="stat-label">Probabilité</p><p class="verdict-value" id="prob">–</p></div>
+        <div class="verdict-box"><p class="stat-label">Vraie famille</p><p class="verdict-value" id="truth">–</p><span class="tag" id="tag"></span></div>
+      </div>
+      <div class="two-cols">
+        <div class="card">
+          <h3>Probabilité de chaque famille</h3>
+          <div class="bars" id="proba-bars"></div>
+          <p class="caption"><span class="key gold"></span> seuil « famille inconnue »</p>
+        </div>
+        <div class="card">
+          <h3>Pourquoi ? Les features qui ont le plus pesé</h3>
+          <div class="shap" id="shap"></div>
+          <p class="caption"><span class="key violet"></span> pousse vers la famille prédite · <span class="key gold"></span> en éloigne</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="inconnu" class="section">
+    <p class="eyebrow reveal">Monde ouvert</p>
+    <h2 class="reveal">Et si la famille était <span class="accent">inconnue ?</span></h2>
+    <p class="sub reveal">Le modèle range toujours un fichier dans l'une de ses familles. Avec un seuil, il répond
+      « inconnue » quand il hésite : il répond moins souvent, mais se trompe moins.</p>
+    <div class="slider reveal">
+      <label for="threshold">Seuil « famille inconnue »</label>
+      <input type="range" id="threshold" min="0" max="1" step="0.05" value="0.5">
+      <output id="threshold-value">0,50</output>
+    </div>
+    <div class="stats three">
+      <div class="stat reveal"><p class="stat-value" id="coverage">–</p><p class="stat-label">fichiers du test auxquels il répond</p></div>
+      <div class="stat reveal"><p class="stat-value" id="accuracy">–</p><p class="stat-label">de réponses justes</p></div>
+      <div class="stat reveal"><p class="stat-value" id="flagged">–</p><p class="stat-label">fichiers de familles jamais vues signalés « inconnue »</p></div>
+    </div>
+    <div class="two-cols">
+      <div class="card reveal"><h3>Couverture et justesse selon le seuil</h3><div id="curve"></div></div>
+      <div class="card reveal"><h3>Des familles que le modèle n'a jamais vues</h3>
+        <div class="table-wrap"><table id="unknown"><thead><tr><th>vraie famille</th><th>prédite</th><th>probabilité</th><th>décision</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="importance" class="section">
+    <p class="eyebrow reveal">Importance des features</p>
+    <h2 class="reveal">Ce sur quoi le modèle <span class="accent">s'appuie.</span></h2>
+    <p class="sub reveal">Baisse du F1 macro quand on mélange toutes les colonnes d'un groupe entre les fichiers du test :
+      plus la baisse est forte, plus le modèle dépend de ce groupe.</p>
+    <div class="card reveal"><div class="bars" id="group-bars"></div></div>
+  </section>
+
+  <section id="methode" class="section">
+    <p class="eyebrow reveal">Méthode</p>
+    <h2 class="reveal">Comment nous avons <span class="accent">procédé.</span></h2>
+    <div class="cards">
+      <div class="card reveal"><span class="num">01</span><h3>Les données</h3><p id="m-data">EMBER2024 : des millions de fichiers Windows déjà réduits à 2 568 caractéristiques. Les 10 familles les plus fréquentes, un découpage dans le temps.</p></div>
+      <div class="card reveal"><span class="num">02</span><h3>Le modèle</h3><p id="m-model">Plusieurs modèles d'arbres comparés sur les semaines les plus récentes du train ; le meilleur est évalué une seule fois sur le test.</p></div>
+      <div class="card reveal"><span class="num">03</span><h3>L'explication</h3><p>Permutation des groupes de features, SHAP fichier par fichier, et vrais noms des colonnes hachées.</p></div>
+      <div class="card reveal"><span class="num">04</span><h3>L'éthique</h3><p>Aucun exécutable téléchargé ni lancé, des empreintes qui servent seulement d'identifiants, un outil d'aide et pas de décision automatique.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p><b>Outil d'aide au tri, pas de décision automatique.</b> Le modèle ne connaît que 10 familles de fichiers
+    Win32 : dans le test réel, 58 % des malwares appartiennent à d'autres familles.</p>
+  <p class="muted">Projet de cybersécurité · Abou, Bryce et Kenneth · données EMBER2024 (licence Apache 2.0) ·
+    <span id="generated"></span></p>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

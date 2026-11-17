@@ -158,6 +158,10 @@ référence choisie par A (fond noir, accent bleu-cyan, cartes à bord fin, halo
 - [x] Section « Interface web de démonstration » dans le README (§ 6.6)
 - [ ] La lancer sur les vraies données avec le modèle final, et choisir le seuil par défaut avec B
       (`results/rejet.csv`)
+- [x] Version en ligne pour GitHub Pages (`docs/`) : page statique animée, dans le même style, qui
+      lit des résultats exportés à l'avance (`scripts/export_demo.py`, README § 6.7)
+- [ ] `python -m scripts.export_demo` sur le modèle final, commiter `docs/data/demo.json`, puis
+      activer GitHub Pages (*Settings → Pages*, dossier `/docs`) après la fusion dans `main`
 - [ ] Scénario de démo pour la soutenance (2 minutes) : un fichier bien classé, une confusion
       vers wacatac, un fichier à faible confiance ; diapositive « Démo » dans `rapport/diapositives.md`
 - [ ] Copie d'écran de secours dans `results/figures/` si la démo ne marche pas le jour J

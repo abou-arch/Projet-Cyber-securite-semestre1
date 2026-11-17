@@ -85,6 +85,17 @@ button[kind="primary"]:hover, button[data-testid="stBaseButton-primary"]:hover {
 .stTextInput input {{ border-radius: 12px; }}
 [data-testid="stImage"] img {{ border-radius: 12px; }}
 .section-title {{ font-size: 15px; font-weight: 600; color: #FFFFFF; margin: 6px 0 4px 0; }}
+/* Animations légères (coupées si l'ordinateur demande moins de mouvements). */
+.hero .ring {{ animation: halo 5s ease-in-out infinite; }}
+.hero h1, .hero p, .pill {{ animation: rise .8s cubic-bezier(.2, .7, .2, 1) both; }}
+.hero h1 {{ animation-delay: .08s; }} .hero p {{ animation-delay: .2s; }}
+.pill .dot {{ animation: blink 2.4s ease-in-out infinite; }}
+[data-testid="stMetric"] {{ animation: rise .6s ease both; transition: border-color .3s, box-shadow .3s; }}
+[data-testid="stMetric"]:hover {{ border-color: #2A2A2A; box-shadow: 0 0 22px rgba(155, 123, 234, .12); }}
+@keyframes rise {{ from {{ opacity: 0; transform: translateY(16px); }} }}
+@keyframes halo {{ 50% {{ opacity: .65; transform: scale(1.04); }} }}
+@keyframes blink {{ 50% {{ opacity: .5; box-shadow: 0 0 2px {ACCENT}; }} }}
+@media (prefers-reduced-motion: reduce) {{ * {{ animation: none !important; transition: none !important; }} }}
 </style>
 """
 
