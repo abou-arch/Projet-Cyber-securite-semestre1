@@ -345,6 +345,11 @@ save_figure(fig, "B_matrice_confusion")         # -> results/figures/B_matrice_c
   minuscules, sans espace ni accent. `save_figure` refuse les autres noms.
 - Largeur 16 cm (pleine page) ou 8 cm (demi-page, `HALF_WIDTH`), 200 dpi, police 10 pt.
 - Une couleur par famille (`family_colors`), la même dans toutes les figures du rapport.
+- **Palette du projet**, presque monochrome : violets, ors, beiges et gris. `new_figure` l'applique
+  d'office. `color="C0"` donne le violet (série principale), `"C1"` l'or (deuxième série). Pour une
+  carte de chaleur, `cmap="projet_seq"` (beige pâle → violet foncé) ou `cmap="projet_div"`
+  (or ← beige → violet, valeurs de signe variable), et `text_color_on(cmap, valeur)` choisit un
+  texte lisible. Les constantes `ACCENT`, `SECOND`, `NEUTRAL`… sont dans `malware_family/figures.py`.
 - Titres et axes en français, unités entre parenthèses : « Taille (octets) ».
 
 ### 6.4 Modèle final (rôle B)

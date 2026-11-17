@@ -44,7 +44,6 @@ if __package__ in (None, ""):  # lancé par « python scripts/importance.py »
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import joblib
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -56,7 +55,8 @@ from tqdm import tqdm
 
 from malware_family.dataset import find_dataset, load_dataset
 from malware_family.ember_features import FEATURE_GROUPS
-from malware_family.figures import FIGURES_DIR, FULL_WIDTH, CM, new_figure, save_figure
+from malware_family.figures import (ACCENT, CHARCOAL, CM, FIGURES_DIR, FULL_WIDTH, NEUTRAL, SECOND,
+                                    new_figure, palette, save_figure, text_color_on)
 from scripts.hash_lookup import load_index, readable_name
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -301,10 +301,11 @@ def plot_groups(groups, baseline_f1, figures_dir, native_label="MDI"):
     """Deux barres par groupe : baisse du F1 macro par permutation, et importance interne."""
     table = groups.iloc[::-1]
     fig, (left, right) = new_figure(FULL_WIDTH, 9 * CM, ncols=2, sharey=True)
-    left.barh(table.group, table.perm_f1_drop_mean, xerr=table.perm_f1_drop_std, color="tab:blue")
+    left.barh(table.group, table.perm_f1_drop_mean, xerr=table.perm_f1_drop_std, color=ACCENT,
+              ecolor=CHARCOAL)
     left.set_xlabel("Baisse du F1 macro (permutation)")
     left.set_title(f"Sur le test (F1 macro {_fr(baseline_f1)})")
-    right.barh(table.group, table.mdi_sum, color="tab:gray")
+    right.barh(table.group, table.mdi_sum, color=NEUTRAL)
     right.set_xlabel(f"Somme du {native_label}")
     right.set_title(f"Dans le modèle ({native_label})")
     for ax in (left, right):
@@ -317,16 +318,15 @@ def plot_groups(groups, baseline_f1, figures_dir, native_label="MDI"):
 def plot_top_features(features, figures_dir, n=20):
     """Les ``n`` features dont la permutation fait le plus baisser le F1, colorées par groupe."""
     table = features.dropna(subset=["perm_f1_drop_mean"]).head(n).iloc[::-1]
-    palette = dict(zip(FEATURE_GROUPS, matplotlib.colormaps["tab20"].colors))
+    colors = dict(zip(FEATURE_GROUPS, palette(len(FEATURE_GROUPS))))
     fig, ax = new_figure(FULL_WIDTH, (3 + 0.45 * len(table)) * CM)
     ax.barh(range(len(table)), table.perm_f1_drop_mean, xerr=table.perm_f1_drop_std,
-            color=[palette.get(group, "tab:gray") for group in table.group])
+            color=[colors.get(group, NEUTRAL) for group in table.group], ecolor=CHARCOAL)
     ax.set_yticks(range(len(table)), [_short(name) for name in table.name], fontsize=8)
     ax.set_xlabel("Baisse du F1 macro (permutation, test)")
     ax.grid(axis="y", visible=False)
     shown = list(dict.fromkeys(table.group[::-1]))
-    handles = [Patch(color=palette.get(g, "tab:gray"), label=g)
-               for g in shown]
+    handles = [Patch(color=colors.get(g, NEUTRAL), label=g) for g in shown]
     ax.legend(handles=handles, title="Groupe", loc="lower right", frameon=False)
     fig.tight_layout()
     return _save(fig, "C_top_features", figures_dir)
@@ -337,7 +337,7 @@ def plot_groups_by_family(groups, families, test_counts, figures_dir):
     values = groups[[f"f1_drop_{family}" for family in families]].to_numpy()
     fig, ax = new_figure(FULL_WIDTH, 10 * CM)
     limit = max(np.abs(values).max(), 1e-6)
-    image = ax.imshow(values, cmap="RdBu_r", vmin=-limit, vmax=limit, aspect="auto")
+    image = ax.imshow(values, cmap="projet_div", vmin=-limit, vmax=limit, aspect="auto")
     ax.set_xticks(range(len(families)), [f"{f}\n(n={n})" for f, n in zip(families, test_counts)],
                   rotation=45, ha="right", fontsize=8)
     ax.set_yticks(range(len(groups)), groups.group)
@@ -346,7 +346,7 @@ def plot_groups_by_family(groups, families, test_counts, figures_dir):
         for j in range(values.shape[1]):
             if abs(values[i, j]) >= 0.01:
                 ax.text(j, i, _fr(values[i, j], 2), ha="center", va="center",
-                        fontsize=6, color="white" if abs(values[i, j]) > 0.6 * limit else "black")
+                        fontsize=6, color=text_color_on("projet_div", 0.5 + values[i, j] / (2 * limit)))
     fig.colorbar(image, ax=ax, label="Baisse du F1 de la famille")
     ax.set_title("Groupes permutés (lignes) et familles touchées (colonnes)")
     fig.tight_layout()
@@ -359,9 +359,10 @@ def plot_ablation(table, full_f1, figures_dir):
     pivot = pivot.sort_values("seul")
     fig, ax = new_figure(FULL_WIDTH, 9 * CM)
     positions = np.arange(len(pivot))
-    ax.barh(positions - 0.2, pivot["seul"], height=0.4, label="ce groupe seul", color="tab:blue")
-    ax.barh(positions + 0.2, pivot["sans"], height=0.4, label="tous sauf ce groupe", color="tab:orange")
-    ax.axvline(full_f1, color="black", linestyle="--", linewidth=1, label=f"modèle complet ({_fr(full_f1)})")
+    ax.barh(positions - 0.2, pivot["seul"], height=0.4, label="ce groupe seul", color=ACCENT)
+    ax.barh(positions + 0.2, pivot["sans"], height=0.4, label="tous sauf ce groupe", color=SECOND)
+    ax.axvline(full_f1, color=CHARCOAL, linestyle="--", linewidth=1,
+               label=f"modèle complet ({_fr(full_f1)})")
     ax.set_yticks(positions, pivot.index)
     ax.set_xlabel("F1 macro (test)")
     ax.set_xlim(0, 1)
@@ -374,18 +375,18 @@ def plot_ablation(table, full_f1, figures_dir):
 def plot_shap_groups(shares, test_counts, figures_dir):
     """Carte de chaleur : part de chaque groupe (colonnes) dans les décisions de chaque famille."""
     fig, ax = new_figure(FULL_WIDTH, 10 * CM)
-    image = ax.imshow(shares.to_numpy(), cmap="Blues", vmin=0, aspect="auto")
+    limit = max(float(np.nanmax(shares.to_numpy())), 1e-6)
+    image = ax.imshow(shares.to_numpy(), cmap="projet_seq", vmin=0, vmax=limit, aspect="auto")
     ax.set_xticks(range(shares.shape[1]), shares.columns, rotation=45, ha="right", fontsize=8)
     ax.set_yticks(range(len(shares)), [f"{family} (n={test_counts.get(family, 0)})"
                                        for family in shares.index], fontsize=8)
     ax.grid(False)
-    limit = np.nanmax(shares.to_numpy())
     for i in range(shares.shape[0]):
         for j in range(shares.shape[1]):
             value = shares.iat[i, j]
             if value >= 1:
                 ax.text(j, i, f"{value:.0f}", ha="center", va="center", fontsize=7,
-                        color="white" if value > 0.6 * limit else "black")
+                        color=text_color_on("projet_seq", value / limit))
     fig.colorbar(image, ax=ax, label="Part de la contribution (%)")
     ax.set_title("Quels groupes de features décident de chaque famille ? (SHAP, test)")
     fig.tight_layout()

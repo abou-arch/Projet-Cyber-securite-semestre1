@@ -25,3 +25,21 @@ def test_family_colors_are_distinct_and_stable(n):
     assert list(colors) == families
     assert len(set(colors.values())) == n
     assert family_colors(families) == colors  # mêmes couleurs pour A, B et C
+
+
+def test_project_palette_is_the_default():
+    """Palette du projet (violets, ors, beiges, gris) : C0 = violet, C1 = or, échelles enregistrées."""
+    from matplotlib.colors import to_hex
+
+    from malware_family import figures
+
+    fig, ax = new_figure()
+    line, = ax.plot([0, 1], [0, 1])
+    assert to_hex(line.get_color()) == figures.VIOLET.lower()
+    assert to_hex(matplotlib.rcParams["axes.prop_cycle"].by_key()["color"][1]) == figures.GOLD.lower()
+    for name in ("projet_seq", "projet_div"):
+        assert name in matplotlib.colormaps
+    assert matplotlib.rcParams["image.cmap"] == "projet_seq"
+    assert set(figures.palette(10)) <= set(figures.FAMILY_PALETTE)
+    assert figures.text_color_on("projet_seq", 0.0) == "black"   # beige pâle : texte noir
+    assert figures.text_color_on("projet_seq", 1.0) == "white"   # violet foncé : texte blanc

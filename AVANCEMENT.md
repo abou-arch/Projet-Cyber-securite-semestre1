@@ -55,6 +55,10 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 - [x] Modèle de diapositives commun choisi (style sobre, Space Grotesk + Inter) et diapositives 1 à 8
       préparées, avec les notes d'oral : présentation Slides sur claude.ai (lien privé, à partager à B et C)
 - [ ] Diapositive 1 : compléter « [Formation] — [date de soutenance] » ; relire les notes d'oral
+- [x] Palette commune des figures (violets, ors, beiges, gris) dans `malware_family/figures.py`,
+      appliquée aux scripts de B et C et aux notebooks
+- [ ] Régénérer les figures `A_` avec la nouvelle palette (notebooks 01 et 02 : *Restart Kernel and
+      Run All*), puis les remplacer dans la présentation (diapositives 4, 6, 7 et 8)
 - [ ] Assembler le rapport (`pandoc`), harmoniser les renvois et vérifier les chiffres contre `results/`
 
 ## Rôle B : modèles et évaluation
@@ -166,7 +170,8 @@ référence choisie par A (fond noir, accent bleu-cyan, cartes à bord fin, halo
    Ne plus travailler sur `Bryce`, `phase3-evaluation` ni `Kenneth` : tout est sur `Abou`.
 2. **A** : ajouter C comme relecteur de la PR #3.
 3. **B** : `python -m scripts.train`, puis `python -m scripts.importance --ablation` (ou A),
-   puis `python -m scripts.evaluate` ; pousser `results/` et les figures `B_`.
+   puis `python -m scripts.evaluate` ; pousser `results/` et les figures `B_` et `C_`, qui sortiront
+   directement dans la nouvelle palette.
 4. **B** : sections 4 et 5, avec les chiffres de `results/metrics.json` et `results/evaluation.json`.
 5. **C** : interprétation dans le notebook 04 ; sections 6 et 7.
 6. **A** : lancer l'interface sur les vraies données (`python -m streamlit run app/demo.py`) une fois

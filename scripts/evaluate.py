@@ -56,7 +56,7 @@ from sklearn.metrics import (ConfusionMatrixDisplay, accuracy_score, balanced_ac
 
 from malware_family.dataset import find_dataset, load_dataset
 from malware_family.ember_features import feature_groups
-from malware_family.figures import CM, family_colors, new_figure, save_figure
+from malware_family.figures import CM, GOLD_DARK, NEUTRAL, family_colors, new_figure, save_figure
 
 # Variante à étiquettes sûres : par défaut, le dossier du jeu suivi de « _conf05 »
 # (ex. C:\ember2024\processed\Win32_top10_conf05, commande de A dans le README, § 4.5).
@@ -132,7 +132,7 @@ def step_confusion(ctx):
     fig, ax = new_figure(height=14 * CM)
     ConfusionMatrixDisplay.from_predictions(
         data.y_test, ctx["y_pred"], labels=labels, display_labels=families,
-        normalize="true", values_format=".2f", xticks_rotation=60, cmap="Blues",
+        normalize="true", values_format=".2f", xticks_rotation=60, cmap="projet_seq",
         colorbar=False, ax=ax, text_kw={"fontsize": 7})
     ax.grid(False)
     ax.set_title("Matrice de confusion normalisée (test)")
@@ -233,9 +233,9 @@ def step_derive(ctx):
     unreliable = table[~table.fiable]
     if len(unreliable):
         ax.scatter(pd.to_datetime(unreliable.semaine), unreliable.f1_macro, s=80, facecolors="none",
-                   edgecolors="red", zorder=4, label=f"< {MIN_WEEK_SIZE} fichiers")
+                   edgecolors=GOLD_DARK, linewidths=1.5, zorder=4, label=f"< {MIN_WEEK_SIZE} fichiers")
     ax2 = ax.twinx()
-    ax2.bar(x, table.n, width=5, alpha=0.15, color="grey")
+    ax2.bar(x, table.n, width=5, alpha=0.2, color=NEUTRAL)
     ax2.set_ylabel("Fichiers du test")
     ax2.grid(False)
     ax.set_zorder(ax2.get_zorder() + 1)

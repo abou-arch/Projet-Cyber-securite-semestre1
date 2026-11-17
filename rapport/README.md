@@ -27,8 +27,8 @@ Mettez à jour la colonne « État » quand vous avancez.
   leur première apparition.
 - **Titres** : `# N. Titre` pour la section, `## N.k Titre` pour les sous-sections.
 - **Figures** : PNG dans `results/figures/`, préfixées par le rôle (`A_`, `B_`, `C_`), créées
-  avec `malware_family.figures` (16 cm de large, 200 dpi, une couleur fixe par famille ; voir le
-  README du projet, § 6.3). Dans le texte :
+  avec `malware_family.figures` : 16 cm de large, 200 dpi, palette violets, ors, beiges et gris,
+  une couleur fixe par famille (voir le README du projet, § 6.3). Dans le texte :
 
   ```markdown
   ![Figure 5.1](../results/figures/B_matrice_confusion.png)
