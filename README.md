@@ -496,16 +496,23 @@ GitHub Pages depuis un dépôt privé demande un compte payant (GitHub Pro ou un
 « Team ») : sinon, le dépôt doit être public. Pour regarder la page en local :
 `python -m http.server --directory docs`, puis http://localhost:8000.
 
-Animations, inspirées de la page de référence choisie par A et écrites pour le projet
-(`docs/assets/vortex.js`, canvas 2D, sans dépendance) :
+Animations, inspirées de la page de référence choisie par A et écrites pour le projet :
 
-- un tourbillon lumineux et une planète tournent derrière toute la page ;
-- au défilement, la « caméra » se déplace : grand à droite pour l'accueil, petit au centre pour
-  les résultats, zoom qui remplit l'écran pour les familles inconnues, perspective inclinée pour
-  la méthode ;
-- un viseur suit la souris et encadre la carte survolée ;
-- le texte d'une section s'estompe quand on la quitte, les chiffres défilent, les barres se
-  remplissent, la courbe se trace.
+- **Une orbite en 3D** (`docs/assets/orbit3d.js`, WebGL) tourne derrière toute la page. C'est un
+  disque de rubans lumineux en spirale autour d'un trou noir, avec une planète éclairée et son
+  atmosphère. Three.js 0.160 (licence MIT) est copié dans `docs/assets/vendor/`, donc la page ne
+  dépend d'aucun serveur extérieur.
+- **La caméra suit le défilement en 3D** :
+  - grand à droite pour l'accueil ;
+  - petit au centre pour les résultats ;
+  - zoom dans le trou pour les familles inconnues ;
+  - disque incliné en perspective pour la méthode.
+
+  Un léger effet de profondeur suit la souris.
+- **Un viseur** suit la planète, et un autre suit la souris pour encadrer la carte survolée.
+- **Le reste du texte** : une section s'estompe quand on la quitte, les chiffres défilent, les
+  barres se remplissent, la courbe se trace.
+- **Sans WebGL**, une version 2D du tourbillon prend le relais (`docs/assets/vortex.js`).
 
 Tout est coupé si l'ordinateur demande moins de mouvements (réglage d'accessibilité « réduire les
 animations »).
