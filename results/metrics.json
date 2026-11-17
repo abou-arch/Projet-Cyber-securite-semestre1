@@ -33,7 +33,7 @@
   "test_f1_macro": 0.8829128336344985,
   "test_accuracy": 0.9757011761664728,
   "test_balanced_accuracy": 0.8991556959316777,
-  "final_training_seconds": 80.05,
+  "final_training_seconds": 349.0,
   "sklearn_version": "1.9.1",
   "validation_results": [
     {
@@ -41,21 +41,21 @@
       "f1_macro_validation": 0.00015987210231814547,
       "accuracy_validation": 0.0008,
       "balanced_accuracy_validation": 0.1,
-      "duration_seconds": 0.42
+      "duration_seconds": 0.11
     },
     {
       "model": "rf_200_depth20",
       "f1_macro_validation": 0.9547952733133899,
       "accuracy_validation": 0.9767333333333333,
       "balanced_accuracy_validation": 0.9633895965387728,
-      "duration_seconds": 98.76
+      "duration_seconds": 424.31
     },
     {
       "model": "rf_300_depth_none",
       "f1_macro_validation": 0.9514855411808257,
       "accuracy_validation": 0.9786,
       "balanced_accuracy_validation": 0.9655810862725989,
-      "duration_seconds": 115.18
+      "duration_seconds": 460.69
     }
   ],
   "test_per_family": {
