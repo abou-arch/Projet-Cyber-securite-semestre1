@@ -25,8 +25,8 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 | 1. Exploration, premiers modèles, outils | ✅ |
 | 2. Variantes, modèle final, importance | 🔶 code prêt (6 candidats) ; modèle final à relancer sur les vraies données |
 | 3. Évaluation détaillée, interprétation | 🔶 code prêt (`evaluate.py`, `importance.py`) ; calculs et interprétation à faire |
-| 4. Rapport et soutenance | 🔶 sections de A en premier jet, celles de B et C à rédiger |
-| 5. Interface web de démonstration | ⬜ à construire (voir plus bas) |
+| 4. Rapport et soutenance | 🔶 sections et diapositives de A prêtes ; celles de B et C à rédiger |
+| 5. Interface web de démonstration | 🔶 en construction (voir plus bas) |
 
 ---
 
@@ -52,7 +52,9 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 - [x] `ExamplesJson1FilesdatasetChallenges` déplacé dans `tests/data/exemple_ember2024.jsonl` (44 vraies
       lignes, familles hors des 10 : exemple pour la démo et pour un test)
 - [x] Conclusions des notebooks 01 et 02 rédigées (cellules « À compléter »)
-- [ ] Choisir le modèle de diapositives commun
+- [x] Modèle de diapositives commun choisi (style sobre, Space Grotesk + Inter) et diapositives 1 à 8
+      préparées, avec les notes d'oral : présentation Slides sur claude.ai (lien privé, à partager à B et C)
+- [ ] Diapositive 1 : compléter « [Formation] — [date de soutenance] » ; relire les notes d'oral
 - [ ] Assembler le rapport (`pandoc`), harmoniser les renvois et vérifier les chiffres contre `results/`
 
 ## Rôle B : modèles et évaluation
@@ -78,7 +80,8 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 - [ ] Entraîner sur la variante `Win32_top20` (20 familles) : ce qui change
 - [ ] Interpréter : dérive (pente par semaine), confusions vers wacatac (avec C), seuil de rejet
       à proposer pour la démo
-- [ ] Rédiger les sections 4 (méthodologie) et 5 (résultats) ; diapositives 9 à 12
+- [ ] Rédiger les sections 4 (méthodologie) et 5 (résultats) ; diapositives 9 à 12, dans la présentation
+      commune (même style que les diapositives 1 à 8)
 
 ## Rôle C : importance des features et interprétation
 
@@ -97,7 +100,8 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 - [ ] Remplir les cellules « À compléter » du notebook 04 (groupes, features, familles, confusions vers wacatac)
 - [ ] Relier les indices aux descriptions publiques des familles (Malpedia, éditeurs), sans télécharger d'échantillon
 - [ ] Transmettre à B : groupes et features utiles pour un modèle réduit
-- [ ] Rédiger la section 6 (importance) et la section 7 (discussion, avec B) ; diapositives 13 à 15
+- [ ] Rédiger la section 6 (importance) et la section 7 (discussion, avec B) ; diapositives 13 à 15, dans
+      la présentation commune
 
 ## Ensemble
 
@@ -161,4 +165,4 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
    puis `python -m scripts.evaluate` ; pousser `results/` et les figures `B_`.
 4. **B** : sections 4 et 5, avec les chiffres de `results/metrics.json` et `results/evaluation.json`.
 5. **C** : interprétation dans le notebook 04 ; sections 6 et 7.
-6. **A** : interface web, une fois le modèle final choisi (pages 1 et 3 d'abord).
+6. **A** : interface web de démonstration (en cours) ; à relancer sur le modèle final une fois choisi.
