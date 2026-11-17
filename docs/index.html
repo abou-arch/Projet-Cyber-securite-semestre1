@@ -10,6 +10,8 @@
 <body>
 <div class="progress" id="progress"></div>
 <div class="stars" aria-hidden="true"></div>
+<canvas id="vortex" aria-hidden="true"></canvas>
+<div class="cursor" id="cursor" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
 <header class="nav" id="nav">
   <a class="logo" href="#top">EMBER<span>·</span>Familles</a>
@@ -25,10 +27,6 @@
 
 <main id="top">
   <section class="hero">
-    <div class="orbit" aria-hidden="true">
-      <div class="ring"></div><div class="ring ring-2"></div><div class="planet"></div>
-      <div class="scan"><span></span><span></span><span></span><span></span></div>
-    </div>
     <div class="hero-text">
       <span class="badge"><span class="dot"></span>Projet cybersécurité · EMBER2024</span>
       <h1><span class="line">Reconnaître une famille de malware,</span>
@@ -128,7 +126,7 @@
     <p class="eyebrow reveal">Méthode</p>
     <h2 class="reveal">Comment nous avons <span class="accent">procédé.</span></h2>
     <div class="cards">
-      <div class="card reveal"><span class="num">01</span><h3>Les données</h3><p id="m-data">EMBER2024 : des millions de fichiers Windows déjà réduits à 2 568 caractéristiques. Les 10 familles les plus fréquentes, un découpage dans le temps.</p></div>
+      <div class="card reveal"><span class="num">01</span><h3>Les données</h3><p id="m-data">EMBER2024 : des millions de fichiers Windows déjà réduits à 2 568 caractéristiques. Les 10 familles les plus fréquentes, un découpage dans le temps.</p></div>
       <div class="card reveal"><span class="num">02</span><h3>Le modèle</h3><p id="m-model">Plusieurs modèles d'arbres comparés sur les semaines les plus récentes du train ; le meilleur est évalué une seule fois sur le test.</p></div>
       <div class="card reveal"><span class="num">03</span><h3>L'explication</h3><p>Permutation des groupes de features, SHAP fichier par fichier, et vrais noms des colonnes hachées.</p></div>
       <div class="card reveal"><span class="num">04</span><h3>L'éthique</h3><p>Aucun exécutable téléchargé ni lancé, des empreintes qui servent seulement d'identifiants, un outil d'aide et pas de décision automatique.</p></div>
@@ -143,6 +141,7 @@
     <span id="generated"></span></p>
 </footer>
 
+<script src="assets/vortex.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

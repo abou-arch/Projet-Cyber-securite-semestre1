@@ -496,9 +496,19 @@ GitHub Pages depuis un dépôt privé demande un compte payant (GitHub Pro ou un
 « Team ») : sinon, le dépôt doit être public. Pour regarder la page en local :
 `python -m http.server --directory docs`, puis http://localhost:8000.
 
-Les animations (anneau qui tourne, apparitions au défilement, chiffres qui défilent, barres qui
-se remplissent, courbe qui se trace) sont coupées si l'ordinateur demande moins de mouvements
-(réglage d'accessibilité « réduire les animations »).
+Animations, inspirées de la page de référence choisie par A et écrites pour le projet
+(`docs/assets/vortex.js`, canvas 2D, sans dépendance) :
+
+- un tourbillon lumineux et une planète tournent derrière toute la page ;
+- au défilement, la « caméra » se déplace : grand à droite pour l'accueil, petit au centre pour
+  les résultats, zoom qui remplit l'écran pour les familles inconnues, perspective inclinée pour
+  la méthode ;
+- un viseur suit la souris et encadre la carte survolée ;
+- le texte d'une section s'estompe quand on la quitte, les chiffres défilent, les barres se
+  remplissent, la courbe se trace.
+
+Tout est coupé si l'ordinateur demande moins de mouvements (réglage d'accessibilité « réduire les
+animations »).
 
 ## 7. Sécurité
 

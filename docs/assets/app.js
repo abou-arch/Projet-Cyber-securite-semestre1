@@ -242,7 +242,7 @@ async function main() {
     `${data.familles.length} familles.`;
   $("generated").textContent = `données exportées le ${data.genere_le}`;
   $("m-data").textContent = `EMBER2024 : ${data.n_train.toLocaleString("fr-FR")} fichiers Windows en entraînement et ` +
-    `${data.n_test.toLocaleString("fr-FR")} en test, réduits à 2 568 caractéristiques ; ${data.familles.length} familles, ` +
+    `${data.n_test.toLocaleString("fr-FR")} en test, réduits à 2 568 caractéristiques ; ${data.familles.length} familles, ` +
     "un découpage dans le temps.";
 
   // F1 macro sans les familles de moins de 30 fichiers du test : recalculé à partir des scores par
