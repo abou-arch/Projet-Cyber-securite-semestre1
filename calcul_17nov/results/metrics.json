@@ -1,0 +1,203 @@
+{
+  "dataset": "/Users/kennethtraore/Documents/GitHub/Projet-Cyber-securite-semestre1/data/processed/ember2024_Win32_top10",
+  "dataset_created": "2026-11-17T11:38:32+00:00",
+  "n_samples": {
+    "fit": 85000,
+    "validation": 15000,
+    "train": 100000,
+    "test": 30948
+  },
+  "selected_model": "hgb_lr0.1_leaves31",
+  "selected_params": {
+    "categorical_features": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      701,
+      702
+    ],
+    "class_weight": null,
+    "early_stopping": "auto",
+    "interaction_cst": null,
+    "l2_regularization": 0.0,
+    "learning_rate": 0.1,
+    "loss": "log_loss",
+    "max_bins": 255,
+    "max_depth": null,
+    "max_features": 1.0,
+    "max_iter": 200,
+    "max_leaf_nodes": 31,
+    "min_samples_leaf": 20,
+    "monotonic_cst": null,
+    "n_iter_no_change": 10,
+    "random_state": 42,
+    "scoring": "loss",
+    "tol": 1e-07,
+    "validation_fraction": 0.1,
+    "verbose": 0,
+    "warm_start": false
+  },
+  "categorical_features": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    701,
+    702
+  ],
+  "validation_f1_macro": 0.9617942560166851,
+  "test_f1_macro": 0.9172758102628787,
+  "test_accuracy": 0.9818728189220628,
+  "test_balanced_accuracy": 0.9176876892581237,
+  "test_f1_macro_without_small_families": 0.966285291826479,
+  "small_families": {
+    "min_test_support": 30,
+    "families": [
+      "sinowal"
+    ]
+  },
+  "final_training_seconds": 114.67,
+  "sklearn_version": "1.9.1",
+  "validation_results": [
+    {
+      "model": "dummy",
+      "f1_macro_validation": 0.00015987210231814547,
+      "accuracy_validation": 0.0008,
+      "balanced_accuracy_validation": 0.1,
+      "final_params": {},
+      "duration_seconds": 0.02
+    },
+    {
+      "model": "rf_200_depth20",
+      "f1_macro_validation": 0.957075543809639,
+      "accuracy_validation": 0.9777333333333333,
+      "balanced_accuracy_validation": 0.9639565650873028,
+      "final_params": {},
+      "duration_seconds": 15.51
+    },
+    {
+      "model": "rf_300_depth_none",
+      "f1_macro_validation": 0.9546547148344023,
+      "accuracy_validation": 0.9785333333333334,
+      "balanced_accuracy_validation": 0.9655376581837626,
+      "final_params": {},
+      "duration_seconds": 25.15
+    },
+    {
+      "model": "hgb_lr0.1_leaves31",
+      "f1_macro_validation": 0.9617942560166851,
+      "accuracy_validation": 0.9790666666666666,
+      "balanced_accuracy_validation": 0.9683369008651399,
+      "final_params": {},
+      "duration_seconds": 80.73
+    },
+    {
+      "model": "hgb_lr0.05_leaves63",
+      "f1_macro_validation": 0.9561010582313081,
+      "accuracy_validation": 0.9780666666666666,
+      "balanced_accuracy_validation": 0.9679268667664583,
+      "final_params": {},
+      "duration_seconds": 158.69
+    },
+    {
+      "model": "lightgbm",
+      "f1_macro_validation": 0.9603038094839146,
+      "accuracy_validation": 0.9786666666666667,
+      "balanced_accuracy_validation": 0.9675214222332242,
+      "final_params": {
+        "n_estimators": 41
+      },
+      "duration_seconds": 42.26
+    }
+  ],
+  "test_per_family": {
+    "berbew": {
+      "precision": 0.99859761594711,
+      "recall": 0.9969,
+      "f1-score": 0.997748085872992,
+      "support": 10000.0
+    },
+    "cosmu": {
+      "precision": 0.9993662864385298,
+      "recall": 0.9895419368332985,
+      "f1-score": 0.9944298476090384,
+      "support": 4781.0
+    },
+    "wacatac": {
+      "precision": 0.9414000633512829,
+      "recall": 0.9714005556463474,
+      "f1-score": 0.9561650446392664,
+      "support": 6119.0
+    },
+    "sfone": {
+      "precision": 1.0,
+      "recall": 0.9242424242424242,
+      "f1-score": 0.9606299212598425,
+      "support": 66.0
+    },
+    "upatre": {
+      "precision": 0.993075228202707,
+      "recall": 0.9813374805598756,
+      "f1-score": 0.987171464330413,
+      "support": 3215.0
+    },
+    "grandoreiro": {
+      "precision": 0.9345794392523364,
+      "recall": 0.8849557522123894,
+      "f1-score": 0.9090909090909091,
+      "support": 113.0
+    },
+    "glupteba": {
+      "precision": 0.9756242568370987,
+      "recall": 0.9618991793669402,
+      "f1-score": 0.9687131050767415,
+      "support": 1706.0
+    },
+    "expiro": {
+      "precision": 0.9883040935672515,
+      "recall": 0.9758975646497615,
+      "f1-score": 0.9820616472966145,
+      "support": 3983.0
+    },
+    "sinowal": {
+      "precision": 0.4166666666666667,
+      "recall": 0.5555555555555556,
+      "f1-score": 0.47619047619047616,
+      "support": 9.0
+    },
+    "flystudio": {
+      "precision": 0.946031746031746,
+      "recall": 0.9351464435146444,
+      "f1-score": 0.9405576012624934,
+      "support": 956.0
+    },
+    "accuracy": 0.9818728189220628,
+    "macro avg": {
+      "precision": 0.9193645396294728,
+      "recall": 0.9176876892581237,
+      "f1-score": 0.9172758102628787,
+      "support": 30948.0
+    },
+    "weighted avg": {
+      "precision": 0.9822186969735115,
+      "recall": 0.9818728189220628,
+      "f1-score": 0.981974403941615,
+      "support": 30948.0
+    }
+  },
+  "families": [
+    "berbew",
+    "cosmu",
+    "wacatac",
+    "sfone",
+    "upatre",
+    "grandoreiro",
+    "glupteba",
+    "expiro",
+    "sinowal",
+    "flystudio"
+  ]
+}
