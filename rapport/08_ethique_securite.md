@@ -98,10 +98,11 @@ résultats doivent donc toujours être accompagnés de leur niveau de confiance 
 - **Vectorisation.** Elle reprend les constantes et la méthode du code officiel d'EMBER2024
   (`thrember`), distribué sous **licence Apache 2.0**. Le fichier `ember_features.py` le
   mentionne.
-- **Jeu de données.** EMBER2024 est utilisé dans le cadre de la recherche et de l'enseignement,
-  et cité [EMBER2024].
-- **À vérifier avant la version finale :** la licence exacte du jeu de données, sur sa page
-  Hugging Face.
+- **Jeu de données.** EMBER2024 est publié sur Hugging Face (`joyce8/EMBER2024`) sous **licence
+  Apache 2.0**, en accès libre (sans demande d'accès). Ses auteurs demandent seulement de le
+  citer quand il est utilisé dans un travail de recherche : c'est fait [EMBER2024]. Nous
+  l'utilisons dans un cadre d'enseignement, et seulement pour ce que ses auteurs prévoient :
+  entraîner et évaluer des classifieurs de malwares.
 
 ## 8.9 Règles suivies par l'équipe
 

@@ -56,3 +56,14 @@ def test_empty_histogram_gives_zeros_instead_of_nan(group):
     sample = make_samples(1, seed=3)[0]
     sample[group] = [0] * 256
     assert not vectorize(sample)[feature_groups()[group]].any()
+
+
+def test_real_ember2024_examples_are_vectorized():
+    """44 vraies lignes d'EMBER2024 (tests/data/exemple_ember2024.jsonl), de 5 types de fichiers :
+    toutes donnent un vecteur fini de la bonne taille. Ce fichier sert aussi d'exemple pour la démo."""
+    path = Path(__file__).parent / "data" / "exemple_ember2024.jsonl"
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(rows) == 44
+    assert {row["file_type"] for row in rows} == {"Win32", "Win64", "Dot_Net", "ELF", "PDF"}
+    X = np.array([vectorize(row) for row in rows])
+    assert X.shape == (44, N_FEATURES) and np.isfinite(X).all()

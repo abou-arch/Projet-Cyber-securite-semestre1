@@ -47,11 +47,11 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 
 ### Reste à faire
 - [ ] Ajouter un relecteur à la PR #3 (C relit A), puis la fusionner
-- [ ] Vider les sorties des notebooks 01 et 02 avant de les commiter
-- [ ] Vérifier la licence d'EMBER2024 sur sa page Hugging Face (section 8.8)
-- [ ] Décider du sort de `ExamplesJson1FilesdatasetChallenges` (1,7 Mo à la racine, ajouté sur `main` le 26/09) :
-      le supprimer, ou le déplacer dans `tests/data/` s'il sert à la démo
-- [ ] Remplir les cellules « À compléter » des notebooks 01 et 02
+- [x] Sorties des notebooks 01 et 02 vidées
+- [x] Licence d'EMBER2024 vérifiée sur Hugging Face : Apache 2.0, accès libre, citation demandée (section 8.8)
+- [x] `ExamplesJson1FilesdatasetChallenges` déplacé dans `tests/data/exemple_ember2024.jsonl` (44 vraies
+      lignes, familles hors des 10 : exemple pour la démo et pour un test)
+- [x] Conclusions des notebooks 01 et 02 rédigées (cellules « À compléter »)
 - [ ] Choisir le modèle de diapositives commun
 - [ ] Assembler le rapport (`pandoc`), harmoniser les renvois et vérifier les chiffres contre `results/`
 
@@ -117,7 +117,7 @@ JavaScript, lancée en local avec `streamlit run app/demo.py`.
 
 ### Règles de sécurité (à respecter strictement)
 - L'interface ne reçoit **jamais d'exécutable** : uniquement des lignes du jeu préparé, ou une
-  ligne JSON de features EMBER2024 (comme `ExamplesJson1FilesdatasetChallenges`). Un fichier
+  ligne JSON de features EMBER2024 (comme `tests/data/exemple_ember2024.jsonl`). Un fichier
   `.exe`, `.dll` ou binaire est refusé avec un message qui explique pourquoi.
 - Elle tourne **en local seulement** (`localhost`), sans connexion à Internet ni à VirusTotal.
 - Les `sha256` sont affichés comme identifiants, jamais comme liens de téléchargement.

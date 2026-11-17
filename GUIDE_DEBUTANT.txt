@@ -147,9 +147,9 @@ On y trouve deux sortes d'informations :
                              (en timestamp Unix*)
   - des features* (les caractéristiques du fichier) : taille, imports...
 
-À VOIR : le fichier ExamplesJson1FilesdatasetChallenges, à la racine du dépôt,
-contient 44 vraies lignes d'EMBER2024. Ouvrez-le avec un éditeur de texte
-(Bloc-notes, TextEdit, VS Code) pour voir des exemples complets.
+À VOIR : le fichier tests/data/exemple_ember2024.jsonl contient 44 vraies lignes
+d'EMBER2024. Ouvrez-le avec un éditeur de texte (Bloc-notes, TextEdit, VS Code)
+pour voir des exemples complets.
 
 Un fichier JSONL* contient une de ces lignes par fichier analysé. Ces fichiers
 JSONL sont rangés dans des archives zip* (Win32_train.zip et Win32_test.zip).
@@ -304,7 +304,6 @@ Si tout se termine par « passed », l'installation est bonne (voir pytest*).
   pyproject.toml        quelques réglages pour pytest
   .gitignore*           les fichiers que git* doit ignorer (données, .venv...)
   plan/                 la répartition du travail : un fichier par rôle
-  ExamplesJson1FilesdatasetChallenges   44 vraies lignes d'EMBER2024
   (les données, elles, restent sur vos ordinateurs : jamais dans git)
 
 
