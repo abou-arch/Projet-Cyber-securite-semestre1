@@ -18,3 +18,10 @@ venv/
 # Réglages des éditeurs (PyCharm, VS Code) : propres à chaque machine
 .idea/
 .vscode/
+
+# Données ou dépôts EMBER2024 copiés dans le projet par erreur : jamais dans git (plusieurs Go)
+/EMBER2024/
+/ember2024/
+
+# Notebooks de brouillon créés par Jupyter
+Untitled*.ipynb
