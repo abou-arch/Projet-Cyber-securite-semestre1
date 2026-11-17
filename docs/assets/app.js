@@ -245,7 +245,14 @@ async function main() {
     `${data.n_test.toLocaleString("fr-FR")} en test, réduits à 2 568 caractéristiques ; ${data.familles.length} familles, ` +
     "un découpage dans le temps.";
 
-  const targets = { f1: data.scores.test_f1_macro, f1small: data.scores.test_f1_macro_without_small_families,
+  // F1 macro sans les familles de moins de 30 fichiers du test : recalculé à partir des scores par
+  // famille si metrics.json vient d'une version de scripts.train qui ne le donnait pas encore.
+  let f1small = data.scores.test_f1_macro_without_small_families;
+  if (f1small === null || f1small === undefined) {
+    const kept = Object.values(data.par_famille).filter((s) => s.fichiers >= 30);
+    if (kept.length) f1small = kept.reduce((sum, s) => sum + s.f1, 0) / kept.length;
+  }
+  const targets = { f1: data.scores.test_f1_macro, f1small,
                     acc: data.scores.test_accuracy, ntest: data.n_test };
   const statObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
