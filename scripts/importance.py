@@ -203,6 +203,23 @@ def confusion_profile(X, y_true, y_pred, families, real, predicted, features, na
                          **means, "rapprochement": closeness})
 
 
+def restrict_categorical(estimator, columns):
+    """Recale ``categorical_features`` (indices ou masque de toutes les colonnes) sur ``columns``.
+
+    Sans cela, un HistGradientBoosting réentraîné sur une partie des colonnes garderait les
+    indices d'origine, qui désignent d'autres colonnes ou n'existent plus (trouvé par Kenneth)."""
+    categorical = estimator.get_params().get("categorical_features")
+    if categorical is None or isinstance(categorical, str):
+        return estimator
+    categorical = np.asarray(categorical)
+    if categorical.dtype == bool:
+        kept = np.flatnonzero(categorical[columns])
+    else:
+        position = {int(c): i for i, c in enumerate(columns)}
+        kept = [position[int(c)] for c in categorical if int(c) in position]
+    return estimator.set_params(categorical_features=[int(k) for k in kept] or None)
+
+
 def ablation(model, data, groups, n_estimators=None):
     """F1 macro du test pour le modèle de B réentraîné avec un seul groupe, puis sans un groupe."""
     labels = list(range(len(data.families)))
@@ -211,7 +228,7 @@ def ablation(model, data, groups, n_estimators=None):
     settings = [(group, mode) for group in groups for mode in ("seul", "sans")]
     for group, mode in tqdm(settings, desc="Ablation"):
         columns = groups[group] if mode == "seul" else np.setdiff1d(all_columns, groups[group])
-        estimator = clone(model)
+        estimator = restrict_categorical(clone(model), columns)
         if n_estimators and "n_estimators" in estimator.get_params():
             estimator.set_params(n_estimators=n_estimators)
         start = time.perf_counter()

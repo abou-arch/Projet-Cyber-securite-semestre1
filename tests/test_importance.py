@@ -6,6 +6,7 @@ import lightgbm
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 
 from malware_family.dataset import load_dataset
@@ -189,3 +190,26 @@ def test_main_with_histgradientboosting_uses_a_preselection_forest(trained, tmp_
     features = pd.read_csv(results / "importances.csv")
     assert features.perm_f1_drop_mean.notna().sum() == 3
     assert features.feature[0] in ("imports_a", "imports_b")
+
+
+def test_ablation_recale_les_colonnes_categorielles():
+    """Les colonnes catégorielles de HistGradientBoosting sont des indices de toutes les colonnes :
+    réentraîné sur un groupe, le modèle doit les retrouver à leur nouvelle place (ou ne plus en avoir)."""
+    from types import SimpleNamespace
+
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 3, 300)
+    X = np.column_stack([y + rng.normal(scale=0.3, size=300), rng.normal(size=300),
+                         (y + rng.integers(0, 2, 300)) % 4, rng.normal(size=300)]).astype(np.float32)
+    data = SimpleNamespace(X_train=X[:200], y_train=y[:200], X_test=X[200:], y_test=y[200:],
+                           families=FAMILIES)
+    groups = {"a": np.array([0, 1]), "b": np.array([2, 3])}
+    for categorical in ([2], [False, False, True, False]):
+        model = HistGradientBoostingClassifier(max_iter=10, categorical_features=categorical, random_state=0)
+        assert importance.restrict_categorical(clone(model), groups["b"]).get_params()[
+            "categorical_features"] == [0]
+        assert importance.restrict_categorical(clone(model), groups["a"]).get_params()[
+            "categorical_features"] is None
+        table = importance.ablation(model, data, groups)
+        assert len(table) == 4 and table.test_f1_macro.notna().all()
