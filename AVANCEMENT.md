@@ -23,14 +23,15 @@ Légende : ✅ terminé · 🔶 en cours ou à reprendre · ⬜ pas commencé.
 |---|---|
 | 0. Installation (mêmes données sur les 3 machines) | ✅ |
 | 1. Exploration, premiers modèles, outils | ✅ |
-| 2. Variantes, modèle final, importance | 🔶 calculé par Kenneth le 17/11 (HistGradientBoosting retenu, F1 macro 0,917) ; à reproduire sur `Abou` pour `results/` |
-| 3. Évaluation détaillée, interprétation | 🔶 calculs faits par Kenneth (sauf l'étape `bruit`) ; interprétation et rédaction à faire |
+| 2. Variantes, modèle final, importance | ✅ HistGradientBoosting retenu (F1 macro 0,917) ; calcul refait sur `Abou`, dans `results/` |
+| 3. Évaluation détaillée, interprétation | 🔶 calculs faits, dans `results/` (étape `bruit` comprise) ; interprétation et rédaction à faire |
 | 4. Rapport et soutenance | 🔶 sections 1, 2, 3, 8 et diapositives 1 à 8 prêtes ; celles de B et C à rédiger |
-| 5. Interface web de démonstration | 🔶 en ligne avec la forêt du premier calcul ; à réexporter avec le modèle final |
+| 5. Interface web de démonstration | 🔶 `docs/data/demo.json` réexporté avec le modèle final ; reste à publier |
 
-### Chiffres du calcul complet (Kenneth, 17/11, code de `Abou`)
+### Chiffres du calcul complet (`results/`, 18/11)
 
-Ce sont les chiffres à retrouver quand le calcul sera refait sur `Abou` (même graine, mêmes données).
+Refait sur `Abou` : identique au calcul de Kenneth du 17/11 (mêmes 30 948 prédictions). L'ablation
+vient de son calcul (relancée sur le PC d'Abou, elle manque de mémoire).
 
 | Mesure | Résultat |
 |---|---|
@@ -41,7 +42,8 @@ Ce sont les chiffres à retrouver quand le calcul sera refait sur `Abou` (même 
 | Confusions principales | expiro → wacatac (91), glupteba → wacatac (65), flystudio → wacatac (59) |
 | Dérive | F1 macro de 0,975 (semaine du 16/09/2024) à 0,944 (semaine du 09/12/2024) : −0,005 par semaine |
 | Stabilité (3 graines) | F1 macro entre 0,913 et 0,922 |
-| Modèle réduit | 100 features : F1 0,918 (autant que les 2 568), entraînement en 6 s au lieu de 106 s |
+| Modèle réduit | 100 features : F1 0,917 (autant que les 2 568), entraînement 16 fois plus court |
+| Bruit des étiquettes (`conf05`) | entraîné sur les seules étiquettes sûres (60 732 fichiers) : F1 macro 0,807 sur son test, 0,691 sur le test complet ; pas mieux que le jeu complet |
 | Rejet « inconnu » | seuil 0,9 : répond à 97,2 % des fichiers, 99,1 % de réponses justes |
 | Groupes les plus utiles (permutation) | header (baisse de F1 0,315), imports (0,101), datadirectories (0,078) |
 
@@ -80,7 +82,7 @@ Ce sont les chiffres à retrouver quand le calcul sera refait sur `Abou` (même 
       appliquée aux scripts de B et C et aux notebooks
 - [ ] Régénérer les figures `A_` avec la nouvelle palette (notebooks 01 et 02 : *Restart Kernel and
       Run All*), puis les remplacer dans la présentation (diapositives 4, 6, 7 et 8)
-- [ ] Refaire le calcul final sur `Abou` et pousser `results/` et `docs/data/demo.json`
+- [x] Refaire le calcul final sur `Abou` et pousser `results/` et `docs/data/demo.json`
       (voir « Prochaines actions », étape 2)
 - [ ] Assembler le rapport (`pandoc`), harmoniser les renvois et vérifier les chiffres contre `results/`
 
