@@ -1,0 +1,1318 @@
+================================================================================
+ GUIDE DU DÉBUTANT
+ Projet : classification de familles de malwares par analyse statique
+ (dataset EMBER2024, Python, scikit-learn)
+================================================================================
+
+Pour qui ?   Les trois membres de l'équipe. Aucune connaissance préalable en
+             cybersécurité ni en machine learning n'est nécessaire.
+
+Comment le lire ?
+  - Lisez d'abord les parties 1 à 3 : le projet, les données, nos programmes.
+  - La partie 4 quand vous lancez les commandes (Windows ET macOS).
+  - Les parties 5 et 6 avant de commencer les modèles et l'importance des
+    features (phases 1 et 2 du plan).
+  - Un mot suivi d'une étoile (exemple : dataset*) est expliqué dans le
+    GLOSSAIRE (partie 9), classé par ordre alphabétique.
+  - Un problème ? Partie 10.
+
+SOMMAIRE
+   1. Le projet en une page
+   2. Les données : EMBER2024
+   3. Ce que font nos programmes
+   4. Les commandes pas à pas (Windows et macOS)
+   5. Le machine learning expliqué simplement
+   6. L'importance des features expliquée simplement
+   7. Sécurité et éthique
+   8. Git et le travail en équipe
+   9. Glossaire de A à Z
+  10. Problèmes fréquents
+  11. Pour aller plus loin
+
+
+================================================================================
+ PARTIE 1 - LE PROJET EN UNE PAGE
+================================================================================
+
+1.1 Un malware, une famille
+----------------------------
+Un malware* (logiciel malveillant) est un programme conçu pour nuire : voler
+des mots de passe, chiffrer* des fichiers pour exiger une rançon, espionner,
+utiliser l'ordinateur à l'insu de son propriétaire...
+
+Chaque jour apparaissent des centaines de milliers de nouveaux fichiers
+malveillants. La plupart sont des variantes d'un même programme : on les
+regroupe en familles*. Une famille rassemble des malwares qui partagent du code,
+un auteur ou une façon de fonctionner.
+
+  Comparaison : les familles de malwares sont comme les espèces d'oiseaux. Deux
+  pigeons ne sont pas identiques, mais ils se ressemblent bien plus entre eux
+  qu'avec un aigle.
+
+1.2 Notre objectif
+------------------
+  1. Construire un programme qui, à partir de la DESCRIPTION d'un fichier
+     malveillant, devine sa famille. Ce programme s'appelle un classifieur*.
+  2. Expliquer quelles caractéristiques il utilise pour décider : c'est
+     l'analyse de l'importance des features*.
+
+1.3 Pourquoi « analyse statique » ?
+-----------------------------------
+Il existe deux façons d'étudier un malware :
+  - l'analyse dynamique* : on l'exécute dans un environnement isolé (une
+    sandbox*) et on observe ce qu'il fait. C'est riche, mais lent et risqué ;
+  - l'analyse statique* : on l'examine SANS JAMAIS l'exécuter (sa taille, sa
+    structure, les fonctions qu'il utilise, les textes qu'il contient...).
+    C'est rapide et sans danger.
+
+Notre projet est 100 % statique. Mieux : nous ne touchons même pas aux
+fichiers. Nous utilisons des caractéristiques déjà extraites par des chercheurs
+(le dataset* EMBER2024*). Aucun malware ne passe par nos ordinateurs.
+
+1.4 Pourquoi le machine learning ?
+----------------------------------
+Personne ne peut analyser à la main des millions de fichiers. Le machine
+learning* (apprentissage automatique) permet à un programme d'apprendre à
+partir d'exemples dont on connaît la réponse (ici, la famille), puis de
+deviner la réponse pour de nouveaux fichiers.
+
+  Comparaison : on montre à un enfant des centaines de photos de chats et de
+  chiens en lui disant à chaque fois la bonne réponse. Il finit par reconnaître
+  tout seul un chat qu'il n'a jamais vu.
+
+1.5 Les grandes étapes du projet
+--------------------------------
+  1. Installer les données ............................. FAIT (nos scripts*)
+  2. Explorer les données .............................. rôle A
+  3. Entraîner et évaluer des modèles* ................. rôle B
+  4. Expliquer ce que les modèles ont appris ........... rôle C
+  5. Rédiger le rapport et préparer la soutenance ...... tous
+  (Le détail est dans le dossier plan/, un fichier par rôle.)
+
+
+================================================================================
+ PARTIE 2 - LES DONNÉES : EMBER2024
+================================================================================
+
+2.1 Qu'est-ce qu'EMBER2024 ?
+----------------------------
+Un dataset* (jeu de données) public, publié en 2025 par des chercheurs pour la
+recherche sur la détection de malwares. Il décrit 3,2 millions de fichiers
+envoyés à VirusTotal* entre septembre 2023 et décembre 2024 :
+  - des fichiers bénins* (normaux) et malveillants ;
+  - de 6 types : Win32*, Win64*, .NET*, APK*, ELF*, PDF*.
+
+Nous n'utilisons que les fichiers Win32 : les programmes Windows classiques
+(.exe*, .dll*). C'est le type le plus courant, et nos features (imports,
+sections...) n'existent que pour les programmes Windows.
+
+POINT CLÉ : EMBER2024 ne contient PAS les fichiers eux-mêmes, seulement leur
+description. C'est ce qui rend le projet sans danger.
+
+2.2 Le format PE : comment est fait un programme Windows
+---------------------------------------------------------
+Un programme Windows est un fichier au format PE* (Portable Executable). On
+peut le comparer à un livre :
+  - l'en-tête* (header) = la couverture et la page de garde : type de
+    processeur, date de compilation*, tailles, options de sécurité ;
+  - les sections* = les chapitres : « .text » contient le code, « .data » les
+    données, « .rsrc » les ressources (icônes, images...) ;
+  - la table des imports* = la bibliographie : la liste des fonctions*
+    empruntées à Windows dans des DLL*, par exemple :
+      kernel32.dll : CreateFileA     créer ou ouvrir un fichier
+      ws2_32.dll   : connect         se connecter à une autre machine
+      advapi32.dll : RegSetValueExA  modifier le registre* de Windows
+
+Ces informations en disent long : un programme qui importe des fonctions de
+réseau, de chiffrement et d'accès au registre ne ressemble pas à une
+calculatrice.
+
+2.3 À quoi ressemble une ligne du dataset
+-----------------------------------------
+Chaque fichier est décrit par UNE ligne au format JSON* (du texte organisé en
+paires « clé : valeur »). Exemple simplifié :
+
+  {"sha256": "3f7a...c91e", "label": 1, "family": "berbew",
+   "family_confidence": 0.82, "first_submission_date": 1696089632,
+   "general": {"size": 97792, "entropy": 6.2, ...},
+   "imports": {"KERNEL32.dll": ["CreateFileA", "VirtualAlloc"]}, ...}
+
+On y trouve deux sortes d'informations :
+  - des métadonnées* (des informations SUR le fichier) :
+      sha256*                l'identifiant unique du fichier (son empreinte)
+      label*                 1 = malveillant, 0 = bénin
+      family                 le nom de la famille (pour les malwares)
+      family_confidence      la confiance dans ce nom, de 0 à 1
+      first_submission_date  la date du premier envoi à VirusTotal
+                             (en timestamp Unix*)
+  - des features* (les caractéristiques du fichier) : taille, imports...
+
+À VOIR : le fichier tests/data/exemple_ember2024.jsonl contient 44 vraies lignes
+d'EMBER2024. Ouvrez-le avec un éditeur de texte (Bloc-notes, TextEdit, VS Code)
+pour voir des exemples complets.
+
+Un fichier JSONL* contient une de ces lignes par fichier analysé. Ces fichiers
+JSONL sont rangés dans des archives zip* (Win32_train.zip et Win32_test.zip).
+
+2.4 D'où viennent les noms de famille ?
+---------------------------------------
+VirusTotal fait analyser chaque fichier par environ 70 antivirus*. Chacun donne
+son verdict, avec ses propres noms (« Backdoor:Win32/Berbew »,
+« Trojan.Win32.Agent.xyz »...). L'outil ClarAVy* compare ces verdicts et en
+déduit un nom de famille commun, avec un score de confiance
+(family_confidence).
+
+Ces étiquettes* ne sont pas parfaites : certaines sont fausses ou trop vagues
+(ex. « wacatac », un nom de détection générique*). C'est le « bruit des
+étiquettes* », une limite à discuter dans le rapport.
+
+2.5 Le découpage train / test
+-----------------------------
+EMBER2024 couvre 64 semaines :
+  - les 52 premières forment le TRAIN* (données d'entraînement) ;
+  - les 12 dernières forment le TEST* (données d'évaluation).
+Le modèle apprend sur le passé, et on mesure ses performances sur des fichiers
+plus récents. C'est réaliste : un antivirus doit reconnaître les malwares de
+demain. Or les malwares évoluent avec le temps : c'est la dérive temporelle*.
+
+2.6 Les 2568 features, groupe par groupe
+----------------------------------------
+Chaque fichier devient une liste de 2568 nombres (un vecteur*), répartis en 12
+groupes :
+
+  general (7)            taille du fichier, entropie* globale, « est-ce un
+                         programme Windows ? », 4 premiers octets* (« MZ »*)
+  histogram (256)        fréquence de chaque valeur d'octet (0 à 255) : un
+                         histogramme*
+  byteentropy (256)      même idée, en tenant compte du « désordre » local :
+                         repère les zones compressées ou chiffrées
+  strings (177)          chaînes de caractères* lisibles : leur nombre, leur
+                         longueur, et la présence de motifs comme des URL*,
+                         des adresses IP*, des clés de registre, « powershell »*
+  header (74)            informations de l'en-tête : type de machine, date de
+                         compilation, tailles, options de sécurité
+  section (224)          nombre de sections, tailles, entropie, droits
+                         (lecture, écriture, exécution), overlay*
+  imports (1282)         bibliothèques (DLL) et fonctions importées
+  exports (129)          fonctions que le fichier propose aux autres programmes
+  datadirectories (34)   emplacement et taille des grandes tables internes du
+                         fichier (data directories*)
+  richheader (33)        « empreinte » des outils de compilation (Rich header*)
+  authenticode (8)       signature numérique* : présente ? auto-signée ?
+  pefilewarnings (88)    anomalies de structure relevées en lisant le fichier
+
+Lien avec le sujet du projet :
+  « bibliothèques importées »         -> imports
+  « taille du fichier »               -> general (et header)
+  « sections »                        -> section
+  « chaînes de caractères »           -> strings
+  « fréquence des octets »            -> histogram et byteentropy
+
+2.7 Le « hashing trick » : les colonnes …_hashNN
+------------------------------------------------
+Problème : il existe des centaines de milliers de noms de fonctions
+différents. Impossible d'avoir une colonne par nom.
+
+Solution : une formule (une fonction de hachage*) transforme chaque nom en un
+numéro de case, par exemple entre 0 et 1023. On compte alors combien de noms
+tombent dans chaque case.
+
+  Comparaison : 1024 boîtes aux lettres numérotées, et une règle qui envoie
+  toujours le même nom dans la même boîte.
+
+Inconvénient : plusieurs noms peuvent tomber dans la même boîte (une
+collision*). Une colonne comme imports_function_hash0517 ne correspond donc
+pas à UNE fonction précise. L'outil hash_lookup.py (rôle A) retrouvera les
+noms qui y tombent.
+
+
+================================================================================
+ PARTIE 3 - CE QUE FONT NOS PROGRAMMES
+================================================================================
+
+3.1 Vue d'ensemble
+------------------
+  Hugging Face*  --download-->  archives zip  --prepare-->  X et y
+                                                             |
+                                                  --dataset--> scikit-learn*
+C'est notre pipeline* : une chaîne d'étapes où la sortie de l'une est l'entrée
+de la suivante. Le code est dans le dossier malware_family/.
+
+3.2 download.py : télécharger
+-----------------------------
+  - Télécharge depuis Hugging Face uniquement les 2 archives utiles :
+    Win32_train.zip et Win32_test.zip (environ 7 à 8 Go).
+  - Vérifie leur somme SHA-256* (empreinte numérique) : si un seul octet est
+    abîmé, l'empreinte change et le script le détecte.
+  - Reprend un téléchargement interrompu.
+  - Ne décompresse PAS les archives : gain de place.
+
+3.3 prepare.py : préparer
+-------------------------
+  - Lit les lignes JSON directement dans les archives zip.
+  - Garde uniquement les malwares dont la famille est connue.
+  - Choisit les 10 familles les plus fréquentes du train. Le test n'est pas
+    regardé pour ce choix (ce serait tricher).
+  - Garde au plus 10 000 fichiers par famille, tirés au hasard de façon
+    reproductible (grâce à une graine*). Cela limite la taille des données et
+    le déséquilibre* entre familles.
+  - Transforme chaque ligne en 2568 nombres : c'est la vectorisation*
+    (recette dans ember_features.py).
+  - Écrit le résultat dans le dossier indiqué par --out-dir.
+
+3.4 Les fichiers produits par prepare
+-------------------------------------
+  X_train.npy, X_test.npy        grands tableaux de nombres : une ligne = un
+                                 fichier, une colonne = une feature (.npy*)
+  y_train.npy, y_test.npy        la réponse de chaque ligne : le numéro de sa
+                                 famille (de 0 à 9)
+  families.txt                   numéro -> nom (ligne 0 = famille numéro 0)
+  feature_names.txt              le nom des 2568 colonnes
+  meta_train.csv, meta_test.csv  pour chaque ligne : sha256, date, type,
+                                 famille, confiance (format CSV*, s'ouvre
+                                 dans Excel)
+  family_counts.csv              nombre de fichiers de CHAQUE famille (toutes,
+                                 pas seulement les 10 retenues)
+  dataset_info.json              paramètres utilisés et statistiques (utile
+                                 pour le rapport)
+
+  À retenir : X = les questions (les features), y = les réponses (les familles).
+
+3.5 dataset.py : charger et vérifier
+------------------------------------
+  - load_dataset() charge tous ces fichiers en une ligne de Python.
+  - python -m malware_family.dataset vérifie que l'installation est correcte.
+
+3.6 ember_features.py : la recette de vectorisation
+---------------------------------------------------
+Transforme une ligne JSON en 2568 nombres. Elle reproduit exactement celle du
+programme officiel d'EMBER2024 (thrember*), sans ses dépendances* lourdes. Nos
+tests vérifient que les résultats sont identiques au bit* près.
+
+3.7 Les tests (dossier tests/)
+------------------------------
+Des programmes qui vérifient automatiquement que notre code fonctionne, sur de
+fausses données générées au hasard (aucun malware). Commande :
+  python -m pytest
+Si tout se termine par « passed », l'installation est bonne (voir pytest*).
+
+3.8 Les autres fichiers du dépôt*
+---------------------------------
+  README.md             la documentation d'installation
+  GUIDE_DEBUTANT.txt    ce guide
+  requirements.txt*     la liste des bibliothèques* Python à installer
+  pyproject.toml        quelques réglages pour pytest
+  .gitignore*           les fichiers que git* doit ignorer (données, .venv...)
+  plan/                 la répartition du travail : un fichier par rôle
+  (les données, elles, restent sur vos ordinateurs : jamais dans git)
+
+
+================================================================================
+ PARTIE 4 - LES COMMANDES PAS À PAS (WINDOWS ET MACOS)
+================================================================================
+
+4.1 Le terminal et les commandes
+--------------------------------
+Le terminal* est une fenêtre où l'on tape des commandes au clavier.
+  - Windows : PowerShell* (menu Démarrer, tapez « PowerShell »).
+  - macOS   : Terminal (Cmd + Espace, tapez « Terminal »).
+
+Une commande = un programme, suivi d'options*. Exemple :
+  python -m malware_family.download --dest C:\ember2024\raw
+    python                       lance Python*
+    -m malware_family.download   exécute le module* « download » du dossier
+                                 malware_family
+    --dest C:\ember2024\raw      une option : « range les fichiers dans ce
+                                 dossier »
+
+Dans ce guide, ce qui suit un # est un commentaire : ne le tapez pas.
+Tapez les commandes UNE PAR UNE et lisez le résultat avant de passer à la
+suivante.
+
+4.2 Windows (PowerShell)
+------------------------
+  cd "C:\chemin\vers\le\projet"            # aller dans le dossier du projet
+  git pull                                 # récupérer la dernière version
+  python -m venv .venv                     # créer l'environnement (1 seule fois)
+  .venv\Scripts\activate                   # l'activer (à chaque nouveau terminal)
+  pip install -r requirements.txt          # installer les bibliothèques
+  python -m pytest                         # vérifier que tout fonctionne
+  python -m malware_family.download --dest C:\ember2024\raw
+  python -m malware_family.prepare --data-dir C:\ember2024\raw --out-dir C:\ember2024\processed\Win32_top10
+  python -m malware_family.dataset C:\ember2024\processed\Win32_top10
+
+4.3 macOS (Terminal)
+--------------------
+  cd ~/chemin/vers/le/projet               # aller dans le dossier du projet
+  git pull                                 # récupérer la dernière version
+  python3 -m venv .venv                    # créer l'environnement (1 seule fois)
+  source .venv/bin/activate                # l'activer (à chaque nouveau terminal)
+  pip install -r requirements.txt          # installer les bibliothèques
+  python -m pytest                         # vérifier que tout fonctionne
+  python -m malware_family.download --dest ~/ember2024/raw
+  python -m malware_family.prepare --data-dir ~/ember2024/raw --out-dir ~/ember2024/processed/Win32_top10
+  python -m malware_family.dataset ~/ember2024/processed/Win32_top10
+
+  Remarques pour macOS :
+  - Avant d'activer l'environnement, utilisez « python3 » ; une fois activé
+    (« (.venv) » s'affiche au début de la ligne), « python » suffit.
+  - « ~ » désigne votre dossier personnel (/Users/votre_nom).
+  - Si git n'est pas installé, macOS propose d'installer les « outils de ligne
+    de commande » : acceptez (ou tapez : xcode-select --install).
+  - Astuce : pour obtenir le chemin d'un dossier, glissez-le depuis le Finder
+    dans la fenêtre du Terminal.
+
+4.4 Pourquoi les données hors de OneDrive et iCloud ?
+-----------------------------------------------------
+OneDrive* (Windows) et iCloud* (macOS, notamment les dossiers Bureau et
+Documents) copient vos dossiers dans le cloud*. Environ 10 Go de données
+satureraient l'espace gratuit et ralentiraient tout. Les données se
+retéléchargent quand on veut : inutile de les sauvegarder. D'où les dossiers
+C:\ember2024 (Windows) et ~/ember2024 (macOS).
+
+4.5 Utiliser les données dans un programme Python
+--------------------------------------------------
+  from malware_family.dataset import load_dataset
+
+  data = load_dataset(r"C:\ember2024\processed\Win32_top10")   # Windows
+  data = load_dataset("~/ember2024/processed/Win32_top10")     # macOS
+
+  data.X_train         le tableau des features du train
+  data.y_train         les familles du train (numéros)
+  data.families        les noms des familles
+  data.feature_names   les noms des 2568 colonnes
+  data.meta_train      sha256, date, famille... de chaque ligne (tableau pandas*)
+
+  Le r devant les guillemets (Windows) empêche Python d'interpréter les « \ »
+  comme des caractères spéciaux.
+  Lancez Python (ou Jupyter*) depuis le dossier du projet, sinon il ne trouve
+  pas malware_family (voir partie 10).
+
+
+================================================================================
+ PARTIE 5 - LE MACHINE LEARNING EXPLIQUÉ SIMPLEMENT
+================================================================================
+
+5.1 L'apprentissage supervisé
+-----------------------------
+On donne au modèle des exemples (X) ET les bonnes réponses (y). Il cherche des
+règles qui relient X à y. Ensuite, il prédit y pour de nouveaux X : c'est une
+prédiction*. Dans notre cas, il s'agit de classification* multiclasse* : 10
+familles possibles.
+
+5.2 Train, validation, test
+---------------------------
+  - TRAIN* : pour apprendre ;
+  - VALIDATION* : un morceau du train mis de côté pour choisir les réglages
+    du modèle (les hyperparamètres*) ;
+  - TEST* : utilisé UNE seule fois, à la fin, pour la note finale.
+
+  Comparaison : le train = les exercices corrigés ; la validation = les
+  examens blancs ; le test = l'examen final. Réviser avec le sujet de l'examen
+  final rendrait la note sans valeur.
+
+5.3 Le surapprentissage
+-----------------------
+Un modèle peut « apprendre par cœur » les exemples d'entraînement sans
+comprendre la règle générale : excellent sur le train, mauvais sur des
+fichiers nouveaux. C'est le surapprentissage* (overfitting). D'où l'importance
+de juger un modèle sur des données qu'il n'a jamais vues.
+
+5.4 Les modèles du projet
+-------------------------
+  - DummyClassifier* : répond toujours la famille la plus fréquente. Inutile
+    en pratique, mais il donne le score « plancher » à battre.
+  - Arbre de décision* : une suite de questions oui/non (« le fichier
+    fait-il plus de 1 Mo ? », « importe-t-il connect ? ») qui mène à une
+    réponse.
+  - Random forest* (forêt aléatoire) : des centaines d'arbres, chacun entraîné
+    sur un échantillon* un peu différent ; ils votent. Robuste et simple à
+    utiliser.
+  - Gradient boosting* (HistGradientBoostingClassifier) : des arbres ajoutés
+    l'un après l'autre, chacun corrigeant les erreurs des précédents. Souvent
+    le plus performant sur ce type de données.
+  - Régression logistique* : un modèle simple (une somme pondérée des
+    features), utile comme point de comparaison.
+
+5.5 Les métriques : comment noter un modèle
+-------------------------------------------
+Exemple : le test contient 30 fichiers de la famille B.
+  - Le modèle a répondu « B » pour 20 fichiers, dont 15 sont vraiment des B.
+      PRÉCISION* de B = 15 / 20 = 75 %   (quand il dit B, il a raison 3 fois
+                                          sur 4)
+  - Sur les 30 vrais B, il en a reconnu 15.
+      RAPPEL* de B    = 15 / 30 = 50 %   (il retrouve la moitié des B)
+  - F1-SCORE* de B = 2 x 0,75 x 0,50 / (0,75 + 0,50) = 0,60
+      (élevé seulement si la précision ET le rappel sont bons)
+
+Les autres métriques* du projet :
+  - ACCURACY* : le pourcentage de bonnes réponses, toutes familles confondues.
+    Piège : si 60 % des fichiers sont d'une même famille, répondre toujours
+    cette famille donne déjà 60 %.
+  - F1 MACRO* : la moyenne des F1 des 10 familles, chacune comptant autant.
+    Les petites familles ne sont pas oubliées : c'est NOTRE MÉTRIQUE
+    PRINCIPALE.
+  - BALANCED ACCURACY* : la moyenne des rappels des familles.
+  - MATRICE DE CONFUSION* : un tableau (vraie famille en ligne, famille
+    prédite en colonne) qui montre quelles familles sont confondues entre
+    elles.
+
+5.6 Le déséquilibre des classes
+-------------------------------
+Si une famille a 10 000 exemples et une autre 500, le modèle a tendance à
+favoriser la grande. Deux remèdes dans le projet : le plafond de 10 000
+fichiers par famille (prepare) et l'option class_weight="balanced"*, qui donne
+plus de poids aux petites familles.
+
+5.7 Dérive temporelle et bruit des étiquettes
+---------------------------------------------
+  - Dérive temporelle* : les malwares changent. Un modèle entraîné sur 2023
+    se trompe davantage sur les fichiers de fin 2024.
+  - Bruit des étiquettes* : certaines familles sont mal nommées ou trop
+    vagues. Le score family_confidence aide à filtrer les étiquettes douteuses
+    (option --min-confidence de prepare).
+
+5.8 Reproductibilité
+--------------------
+random_state* (ou graine*) : un nombre qui fixe le hasard. Même graine = mêmes
+résultats. Indispensable pour que les trois membres de l'équipe obtiennent les
+mêmes chiffres.
+
+
+================================================================================
+ PARTIE 6 - L'IMPORTANCE DES FEATURES EXPLIQUÉE SIMPLEMENT
+================================================================================
+
+6.1 La question
+---------------
+Le modèle prédit bien, mais sur quoi se base-t-il ? La taille ? Les imports ?
+Les chaînes de caractères ? Y répondre, c'est l'analyse de l'importance des
+features*, demandée par le sujet. Elle sert à :
+  - vérifier que le modèle ne s'appuie pas sur un détail absurde ;
+  - mieux comprendre les familles ;
+  - expliquer le modèle dans le rapport.
+
+6.2 L'importance « interne » du Random forest (MDI*)
+---------------------------------------------------
+Chaque fois qu'un arbre utilise une feature pour séparer les fichiers, on
+mesure à quel point cela « met de l'ordre » (les familles sont mieux
+séparées). En additionnant sur tous les arbres, on obtient un score par
+feature (feature_importances_ dans scikit-learn). C'est rapide, mais biaisé* :
+cette méthode avantage les features qui prennent beaucoup de valeurs
+différentes (tailles, dates...).
+
+6.3 L'importance par permutation*
+---------------------------------
+On mélange au hasard une colonne des données de test (on « casse »
+l'information qu'elle contient), puis on regarde de combien le score baisse.
+Grosse baisse = feature importante.
+
+  Comparaison : on cache un indice à un détective. S'il ne trouve plus le
+  coupable, l'indice était crucial.
+
+6.4 Par groupe
+--------------
+On mélange en même temps toutes les colonnes d'un groupe (par exemple les 1282
+colonnes « imports »). Cela répond directement au sujet : quel TYPE
+d'information compte le plus ?
+
+6.5 L'ablation*
+---------------
+On réentraîne le modèle sans un groupe (ou avec un seul groupe) et on compare
+les scores.
+
+6.6 Les pièges à connaître
+--------------------------
+  - Features corrélées* : si deux features disent la même chose, en mélanger
+    une ne fait presque rien baisser (l'autre compense). On sous-estime alors
+    leur importance.
+  - Colonnes hachées : plusieurs noms par colonne (voir 2.7).
+  - Importance n'est pas causalité* : une feature utile au modèle n'est pas
+    forcément LA cause du comportement malveillant.
+
+
+================================================================================
+ PARTIE 7 - SÉCURITÉ ET ÉTHIQUE
+================================================================================
+
+  - Nous ne manipulons aucun malware : seulement des descriptions (features).
+  - Ne cherchez JAMAIS à télécharger un fichier à partir de son sha256 (sur
+    VirusTotal ou ailleurs).
+  - N'utilisez pas le jeu complémentaire EMBER2024-capa : il contient du code
+    malveillant désassemblé*. (Les champs « caps », « ttps » et « mbc » des
+    lignes EMBER2024, eux, ne sont que des descriptions : voir capa*.)
+  - Les données restent hors de git et hors du cloud personnel.
+  - Ce que vous apprenez sert à DÉFENDRE (détecter les malwares), jamais à en
+    créer ou à les améliorer.
+
+
+================================================================================
+ PARTIE 8 - GIT ET LE TRAVAIL EN ÉQUIPE
+================================================================================
+
+8.1 Les notions de base
+-----------------------
+  git*            outil qui garde l'historique de toutes les versions des
+                  fichiers du projet
+  GitHub*         site qui héberge une copie du projet en ligne
+  dépôt*          le dossier du projet suivi par git (une copie sur GitHub,
+                  une sur chaque ordinateur)
+  commit*         une « photo » enregistrée des modifications, avec un message
+  push*           envoyer ses commits sur GitHub
+  pull*           récupérer les commits des autres
+  branche*        une ligne de travail parallèle (ex. la branche Abou) ; main
+                  est la branche principale
+  Pull Request*   une demande de fusion d'une branche dans main, relue par un
+                  coéquipier
+  conflit*        deux personnes ont modifié la même ligne : git demande de
+                  choisir. D'où la règle « chacun ses fichiers ».
+
+8.2 La routine conseillée
+-------------------------
+  1. git pull                        avant de commencer à travailler
+  2. ... vous travaillez ...
+  3. git add <fichiers>              choisir les fichiers à enregistrer
+  4. git commit -m "message clair"   enregistrer
+  5. git push                        envoyer sur GitHub
+  6. À chaque jalon : une Pull Request vers main, relue par un coéquipier.
+  Avec GitHub Desktop*, ce sont les boutons « Fetch/Pull origin », « Commit »,
+  « Push origin » et « Create Pull Request ».
+
+
+================================================================================
+ PARTIE 9 - GLOSSAIRE DE A À Z
+================================================================================
+
+--- A ---
+
+Ablation
+    Expérience qui consiste à retirer un élément (ici, un groupe de features)
+    et à mesurer ce que l'on perd. Si le score chute, l'élément était utile.
+
+Accuracy (exactitude)
+    Pourcentage de bonnes réponses d'un modèle. Trompeur quand les classes
+    sont déséquilibrées (voir partie 5.5).
+
+Adresse IP
+    Numéro qui identifie un appareil sur un réseau, ex. 192.168.1.10. Trouver
+    des adresses IP dans un programme peut révéler un serveur contacté.
+
+Algorithme
+    Suite d'instructions précises pour résoudre un problème, comme une recette
+    de cuisine.
+
+Analyse dynamique
+    Étudier un programme en l'exécutant dans un environnement isolé
+    (sandbox*) pour observer son comportement. Nous NE la pratiquons PAS.
+
+Analyse statique
+    Étudier un programme sans l'exécuter, en examinant sa structure et son
+    contenu. C'est l'approche de notre projet.
+
+Antivirus
+    Logiciel qui détecte et bloque les malwares. Chaque éditeur (Microsoft,
+    Kaspersky, ESET...) donne ses propres noms aux familles.
+
+APK
+    Format des applications Android. Présent dans EMBER2024, non utilisé ici.
+
+Apprentissage supervisé
+    Machine learning à partir d'exemples dont on connaît la bonne réponse
+    (l'étiquette*). C'est notre cas.
+
+Arbre de décision
+    Modèle qui pose une suite de questions oui/non sur les features pour
+    arriver à une réponse. Brique de base du Random forest* et du Gradient
+    boosting*.
+
+Archive (zip)
+    Fichier qui en contient d'autres, compressés pour prendre moins de place.
+    Nos données arrivent dans deux archives .zip.
+
+Authenticode
+    Système de signature numérique* de Microsoft pour les programmes Windows :
+    la signature prouve qui a publié le fichier et qu'il n'a pas été modifié.
+
+AVClass
+    Ancien outil d'unification des noms de familles (utilisé par EMBER 2018).
+    Remplacé par ClarAVy* dans EMBER2024.
+
+--- B ---
+
+Balanced accuracy
+    Moyenne des rappels* de toutes les classes. Moins trompeuse que
+    l'accuracy quand les classes sont déséquilibrées.
+
+Baseline (modèle de référence)
+    Modèle volontairement simple qui sert de point de comparaison. Un « vrai »
+    modèle doit faire mieux. Voir DummyClassifier*.
+
+Bénin
+    Se dit d'un fichier normal, non malveillant.
+
+Biais
+    Erreur systématique : une méthode qui avantage toujours certains cas.
+    Ex. : le MDI* favorise les features aux nombreuses valeurs.
+
+Bibliothèque (Python)
+    Ensemble de code prêt à l'emploi qu'on installe avec pip* : numpy,
+    pandas, scikit-learn... Synonyme : paquet (package).
+
+Binaire (fichier)
+    Fichier que l'ordinateur exécute directement (un .exe par exemple), par
+    opposition au code source lisible par un humain.
+
+Bit
+    Plus petite unité d'information : 0 ou 1. « Identique au bit près » =
+    rigoureusement identique.
+
+Branche (git)
+    Ligne de travail parallèle dans un dépôt git. On travaille sur sa branche
+    sans déranger les autres, puis on fusionne. « main » est la branche
+    principale du projet.
+
+Bruit des étiquettes
+    Proportion d'étiquettes fausses ou imprécises dans un dataset. Dégrade
+    l'apprentissage et les scores.
+
+byteentropy
+    Groupe de 256 features qui combine la valeur des octets et l'entropie*
+    locale (calculée par fenêtres de 2048 octets) : repère les zones
+    compressées ou chiffrées d'un fichier.
+
+--- C ---
+
+capa
+    Outil gratuit (de la société Mandiant) qui décrit les capacités d'un
+    programme : « enregistre les touches du clavier », « envoie des données »...
+    Les lignes d'EMBER2024 contiennent ses résultats (champs caps, ttps, mbc),
+    sous forme de texte uniquement.
+
+Catégorielle (variable)
+    Feature dont la valeur est un code et non une quantité. Ex. : le type de
+    machine (1 = Intel 32 bits...) ; 2 n'est pas « deux fois » 1.
+
+Causalité
+    Relation de cause à effet. Une corrélation* ou une importance ne prouve
+    pas une causalité.
+
+Chaîne de caractères (string)
+    Suite de caractères lisibles, comme un mot ou une phrase. Les programmes
+    contiennent des chaînes : messages, adresses web, noms de fichiers...
+
+Challenge set
+    Partie d'EMBER2024 : 6 315 malwares d'abord passés inaperçus auprès des
+    antivirus. Non utilisée dans notre projet.
+
+Chemin (path)
+    Adresse d'un fichier ou d'un dossier, ex. C:\ember2024\raw (Windows) ou
+    ~/ember2024/raw (macOS, où « ~ » est votre dossier personnel).
+
+Chiffrement
+    Transformation de données pour les rendre illisibles sans une clé. Les
+    rançongiciels chiffrent les fichiers des victimes. Des données chiffrées
+    ont une entropie* très élevée.
+
+ClarAVy
+    Outil des auteurs d'EMBER2024 qui déduit un nom de famille commun à
+    partir des verdicts des antivirus, avec un score de confiance.
+
+Classe
+    Une des réponses possibles d'un classifieur. Ici, une classe = une famille.
+
+Classification / classifieur
+    Classer = attribuer une catégorie à un objet. Un classifieur est un
+    modèle qui fait cela automatiquement.
+
+class_weight="balanced"
+    Option de scikit-learn qui donne plus de poids aux classes rares pendant
+    l'apprentissage, pour compenser le déséquilibre*.
+
+Cloud
+    Stockage ou calcul sur des serveurs accessibles par Internet (OneDrive,
+    iCloud, Google Drive...).
+
+Collision
+    Quand deux noms différents tombent dans la même case d'un hachage*.
+
+Commit
+    Enregistrement d'un ensemble de modifications dans l'historique git, avec
+    un message qui les décrit.
+
+Compilation / compilateur
+    Transformation du code source (écrit par un humain) en programme
+    exécutable. Le compilateur est l'outil qui fait cette transformation.
+
+Compression
+    Réduire la taille de données (archives zip...). Des données compressées
+    ont, comme des données chiffrées, une entropie* très élevée.
+
+Conflit (git)
+    Situation où deux personnes ont modifié la même partie d'un fichier : git
+    ne sait pas quelle version garder et demande de choisir.
+
+Corrélation
+    Lien statistique entre deux variables qui évoluent ensemble (ex. taille du
+    fichier et nombre de chaînes).
+
+CSV
+    Format de tableau en texte : une ligne par enregistrement, des valeurs
+    séparées par des virgules. S'ouvre dans Excel ou avec pandas*.
+
+--- D ---
+
+Data directories
+    Table de l'en-tête d'un programme Windows qui indique où trouver ses
+    grandes structures internes : imports, exports, ressources, signature...
+
+Dataset (jeu de données)
+    Ensemble organisé de données utilisé pour entraîner et évaluer des
+    modèles. Le nôtre : EMBER2024.
+
+Dépendance
+    Bibliothèque dont un programme a besoin pour fonctionner. Les nôtres sont
+    listées dans requirements.txt*.
+
+Dépôt (repository)
+    Dossier d'un projet suivi par git, avec tout son historique. Le nôtre est
+    sur GitHub : abou-arch/Projet-Cyber-securite-semestre1.
+
+Dérive temporelle (concept drift)
+    Les données changent avec le temps (nouveaux malwares, nouvelles
+    techniques), donc un modèle vieillit et se trompe davantage.
+
+Désassemblé (code)
+    Code machine traduit en instructions lisibles par un analyste. Pour un
+    malware, c'est du vrai code malveillant : à exclure du projet.
+
+Déséquilibre des classes
+    Situation où certaines classes ont beaucoup plus d'exemples que d'autres.
+
+Détection générique
+    Nom donné par un antivirus quand il sait qu'un fichier est malveillant
+    sans savoir à quelle famille il appartient (ex. « wacatac »). Ce n'est pas
+    une vraie famille.
+
+DLL (Dynamic Link Library)
+    Fichier Windows qui contient des fonctions partagées par plusieurs
+    programmes (kernel32.dll, user32.dll...). Un programme « importe » des
+    fonctions depuis des DLL.
+
+DummyClassifier
+    Modèle de scikit-learn qui répond toujours la classe la plus fréquente.
+    Sert de baseline* : le score minimal à battre.
+
+--- E ---
+
+Échantillon (sample)
+    Un exemple du dataset (ici, un fichier décrit par ses features). Désigne
+    aussi un sous-ensemble tiré au hasard dans les données.
+
+ELF
+    Format des programmes Linux. Présent dans EMBER2024, non utilisé ici.
+
+EMBER / EMBER2024
+    « Elastic Malware Benchmark for Empowering Researchers » : datasets publics
+    de features de fichiers, pour la recherche sur la détection de malwares.
+    EMBER2024 (publié en 2025) est la version la plus récente.
+
+En-tête (header)
+    Début d'un fichier, qui décrit son contenu : type de processeur, date de
+    compilation, tailles, options...
+
+Entraînement (training)
+    Phase où le modèle apprend à partir des données du train.
+
+Entropie
+    Mesure du « désordre » des octets, de 0 (très répétitif) à 8 (totalement
+    aléatoire). Du texte ou du code se situent autour de 4 à 6 ; des données
+    compressées ou chiffrées sont proches de 8. Une entropie élevée peut
+    signaler un packer*.
+
+Étiquette (label)
+    La bonne réponse associée à un exemple. Dans EMBER2024, « label » vaut 1
+    (malveillant) ou 0 (bénin), et « family » donne le nom de la famille.
+
+.exe (exécutable)
+    Fichier programme Windows qu'on peut lancer (double-clic).
+
+Exports
+    Fonctions qu'un fichier (souvent une DLL) met à disposition des autres
+    programmes.
+
+--- F ---
+
+F1-score
+    Moyenne harmonique de la précision* et du rappel* : elle n'est élevée que
+    si les deux le sont. Calcul : 2 x précision x rappel / (précision + rappel).
+
+F1 macro
+    Moyenne simple des F1 de toutes les classes : chaque famille compte
+    autant, quelle que soit sa taille. Notre métrique principale.
+
+Famille (de malware)
+    Groupe de malwares qui partagent du code, un auteur ou un fonctionnement.
+    Ex. : berbew, expiro, upatre... (descriptions publiques sur Malpedia*).
+
+Feature (caractéristique)
+    Une information mesurée sur chaque fichier, sous forme de nombre : sa
+    taille, son nombre d'imports... Nous en avons 2568 par fichier.
+
+Feature importance (importance des features)
+    Mesure de l'influence de chaque feature sur les décisions d'un modèle.
+    Voir MDI* et permutation*.
+
+Fonction
+    Bloc de code qui réalise une tâche précise (ex. CreateFileA ouvre un
+    fichier). En Python aussi : load_dataset() est une fonction.
+
+Fusion (merge)
+    Réunir le travail d'une branche dans une autre (souvent dans main). Sur
+    GitHub, on fusionne en acceptant une Pull Request*.
+
+--- G ---
+
+Généralisation
+    Capacité d'un modèle à bien fonctionner sur des données qu'il n'a jamais
+    vues. C'est l'objectif ; le contraire est le surapprentissage*.
+
+git
+    Logiciel de gestion de versions : il garde l'historique des fichiers et
+    permet de travailler à plusieurs.
+
+GitHub / GitHub Desktop
+    GitHub : site qui héberge des dépôts git en ligne. GitHub Desktop :
+    application qui permet d'utiliser git avec des boutons plutôt qu'avec des
+    commandes.
+
+.gitignore
+    Fichier qui liste ce que git doit ignorer : données, environnement .venv,
+    fichiers temporaires.
+
+Gradient boosting
+    Méthode qui construit des arbres de décision l'un après l'autre, chacun
+    corrigeant les erreurs des précédents. HistGradientBoostingClassifier en
+    est une version rapide dans scikit-learn.
+
+Graine (seed)
+    Nombre de départ qui fixe le hasard d'un programme : même graine = mêmes
+    résultats. Voir random_state*.
+
+--- H ---
+
+Hachage (fonction de hachage, hash)
+    Formule qui transforme un texte (ou un fichier) en un nombre ou une
+    empreinte. Le même texte donne toujours le même résultat. Voir SHA-256*
+    et hashing trick (partie 2.7).
+
+Histogramme
+    Comptage du nombre d'éléments par catégorie. Ex. : combien d'octets valent
+    0, combien valent 1... jusqu'à 255.
+
+Hugging Face
+    Plateforme en ligne qui héberge des datasets et des modèles de machine
+    learning. EMBER2024 y est publié.
+
+Hyperparamètre
+    Réglage d'un modèle choisi AVANT l'entraînement (nombre d'arbres,
+    profondeur maximale...). On les choisit avec le jeu de validation*.
+
+--- I ---
+
+iCloud / OneDrive (dossiers synchronisés)
+    Services qui copient automatiquement des dossiers de l'ordinateur dans le
+    cloud. À éviter pour nos ~10 Go de données.
+
+Imports
+    Fonctions qu'un programme emprunte à des DLL. Ils révèlent ce que le
+    programme peut faire (réseau, fichiers, registre, chiffrement...).
+
+--- J ---
+
+Jalon
+    Étape clé datée du projet, où l'on vérifie que le travail prévu est fait
+    (J1 à J5 dans les fichiers du dossier plan/).
+
+JSON / JSONL
+    JSON : format de texte structuré en paires « clé : valeur »,
+    ex. {"size": 97792}. JSONL (JSON Lines) : un objet JSON par ligne.
+
+Jupyter (notebook)
+    Document interactif qui mélange du code Python, ses résultats (tableaux,
+    graphiques) et du texte. Pratique pour explorer les données.
+
+--- L ---
+
+Label
+    Voir Étiquette.
+
+--- M ---
+
+Machine learning (apprentissage automatique)
+    Méthodes qui permettent à un programme d'apprendre des règles à partir
+    d'exemples, au lieu qu'un humain les écrive à la main.
+
+Malpedia
+    Encyclopédie en ligne des familles de malwares, utile pour décrire les
+    familles dans le rapport (sans télécharger d'échantillon).
+
+Malware (logiciel malveillant)
+    Programme conçu pour nuire. Voir Types de malwares.
+
+Matrice de confusion
+    Tableau qui croise la vraie classe (en ligne) et la classe prédite (en
+    colonne). La diagonale = les bonnes réponses ; le reste = les confusions.
+
+MD5 / SHA-1
+    Anciennes fonctions de hachage, encore utilisées comme identifiants de
+    fichiers (présentes dans les lignes EMBER2024). Nous utilisons sha256.
+
+MDI (Mean Decrease in Impurity)
+    Importance « interne » d'un Random forest : combien chaque feature aide
+    les arbres à séparer les classes (à réduire l'« impureté », c'est-à-dire
+    le mélange de familles). Rapide mais biaisée.
+
+Métadonnées
+    Données qui décrivent d'autres données : identifiant, date, étiquette...
+
+Métrique
+    Mesure chiffrée de la qualité d'un modèle (accuracy, F1...).
+
+MITRE ATT&CK / MBC / TTP
+    MITRE ATT&CK : catalogue public des tactiques et techniques des attaquants
+    (TTP = Tactiques, Techniques et Procédures). MBC (Malware Behavior Catalog) :
+    catalogue similaire centré sur les comportements des malwares. Ils
+    apparaissent dans les résultats de capa*.
+
+Modèle
+    Programme issu de l'entraînement, qui fait des prédictions. Ex. : un
+    Random forest entraîné sur nos données.
+
+Module (Python)
+    Fichier de code Python qu'on peut utiliser ou lancer. Ex. :
+    malware_family/download.py est le module malware_family.download.
+
+Multiclasse
+    Classification avec plus de deux réponses possibles (ici, 10 familles).
+
+MZ
+    Les deux premiers caractères de tout programme Windows (octets 77 et 90),
+    initiales de Mark Zbikowski, ingénieur de Microsoft.
+
+--- N ---
+
+.NET
+    Plateforme de Microsoft pour écrire des programmes (en C# par exemple).
+    Les programmes .NET sont un des types de fichiers d'EMBER2024.
+
+NumPy / .npy
+    NumPy : bibliothèque Python pour les tableaux de nombres. .npy : format de
+    fichier de NumPy (nos X_train.npy, y_train.npy...).
+
+--- O ---
+
+Octet (byte)
+    Unité de 8 bits, qui peut prendre 256 valeurs (de 0 à 255). Un fichier est
+    une suite d'octets. 1 Go = 1 milliard d'octets.
+
+OneDrive
+    Voir iCloud / OneDrive.
+
+Option (de commande)
+    Précision ajoutée à une commande, souvent introduite par « -- » :
+    --dest, --out-dir, --top-families...
+
+Overlay
+    Données ajoutées à la fin d'un programme Windows, en dehors de sa
+    structure normale. Fréquent pour les installeurs, mais aussi pour cacher
+    du contenu.
+
+--- P ---
+
+Packer (packing)
+    Outil qui compresse ou chiffre un programme pour réduire sa taille ou
+    cacher son contenu (ex. UPX). Un programme « packé » a souvent une
+    entropie élevée et très peu d'imports.
+
+pandas
+    Bibliothèque Python pour manipuler des tableaux de données (comme un Excel
+    programmable).
+
+PDF
+    Format de documents. Présent dans EMBER2024, non utilisé ici.
+
+PE (Portable Executable)
+    Format des programmes Windows (.exe, .dll...). Voir partie 2.2.
+
+pefile / pefilewarnings
+    pefile : bibliothèque Python qui lit les programmes Windows (utilisée par
+    les auteurs d'EMBER2024, pas par nous). pefilewarnings : le groupe de
+    features qui compte les anomalies relevées pendant cette lecture.
+
+Permutation (importance par)
+    Mesure de l'importance d'une feature : on mélange ses valeurs au hasard et
+    on regarde de combien le score baisse (voir partie 6.3).
+
+pip
+    Outil qui installe les bibliothèques Python :
+    pip install -r requirements.txt
+
+Pipeline
+    Chaîne d'étapes automatiques où la sortie de l'une est l'entrée de la
+    suivante (télécharger -> préparer -> charger -> entraîner).
+
+PowerShell
+    Le terminal moderne de Windows.
+
+« powershell » (dans les chaînes)
+    Trouver le mot « powershell » dans un programme peut signaler qu'il lance
+    des commandes système : c'est un des 77 motifs recherchés dans les chaînes.
+
+Précision
+    Pour une famille : parmi les fichiers que le modèle a attribués à cette
+    famille, la part qui lui appartient vraiment.
+
+Prédiction
+    Réponse donnée par un modèle pour un nouvel exemple.
+
+Proxy
+    Intermédiaire par lequel passe la connexion Internet (fréquent dans les
+    écoles et les entreprises). Il peut bloquer certains sites, comme Hugging
+    Face.
+
+Pull / Push / Fetch (git)
+    Pull : récupérer les modifications des autres et mettre à jour vos
+    fichiers. Push : envoyer vos commits sur GitHub. Fetch : récupérer
+    l'historique sans toucher à vos fichiers.
+
+Pull Request
+    Demande de fusionner une branche dans une autre (souvent dans main), que
+    les coéquipiers relisent avant d'accepter.
+
+pytest
+    Outil qui lance les tests automatiques : python -m pytest
+
+Python
+    Langage de programmation du projet, réputé simple à lire.
+
+--- R ---
+
+RAM (mémoire vive)
+    Mémoire de travail de l'ordinateur (8 ou 16 Go en général). Les données
+    utilisées par un modèle doivent y tenir ; sinon : MemoryError.
+
+Random forest (forêt aléatoire)
+    Modèle composé de nombreux arbres de décision, chacun entraîné sur une
+    partie un peu différente des données ; la réponse finale est leur vote.
+
+random_state
+    Paramètre de scikit-learn qui fixe la graine* du hasard, pour obtenir des
+    résultats reproductibles.
+
+Rappel (recall)
+    Pour une famille : parmi les fichiers qui lui appartiennent vraiment, la
+    part que le modèle a retrouvée.
+
+Registre (Windows)
+    Grande base de réglages de Windows. Les malwares le modifient souvent, par
+    exemple pour se relancer à chaque démarrage.
+
+Régression logistique
+    Modèle simple qui calcule une somme pondérée des features pour estimer la
+    probabilité de chaque classe. Malgré son nom, il sert à classer.
+
+requirements.txt
+    Fichier qui liste les bibliothèques Python nécessaires au projet.
+
+Rich header
+    Petite zone non documentée des programmes Windows compilés avec les outils
+    de Microsoft : elle garde la trace des outils et versions utilisés pour la
+    compilation. Une sorte d'empreinte de l'atelier de fabrication.
+
+--- S ---
+
+Sandbox
+    Environnement isolé (souvent une machine virtuelle) où l'on peut exécuter
+    un programme suspect sans risque pour le reste du système.
+
+scikit-learn
+    Bibliothèque Python de machine learning : modèles, métriques, outils
+    d'importance des features... C'est l'outil imposé par le projet.
+
+Script
+    Programme court qu'on lance pour accomplir une tâche (ex. download.py).
+
+Section (PE)
+    Partie d'un programme Windows : .text (le code), .data (les données),
+    .rsrc (les ressources)... Chaque section a une taille, une entropie et
+    des droits (lecture, écriture, exécution).
+
+SHA-256 (empreinte)
+    Fonction de hachage qui calcule une empreinte unique de 64 caractères
+    pour un fichier. Le moindre changement donne une empreinte totalement
+    différente. Sert à identifier les fichiers et à vérifier les
+    téléchargements.
+
+Signature numérique
+    Preuve cryptographique (via un certificat) de l'identité de l'éditeur
+    d'un programme et de son intégrité. Une signature « auto-signée » a été
+    créée par l'éditeur lui-même, sans autorité de confiance : elle prouve
+    peu de choses.
+
+Split
+    Découpage des données en plusieurs parties (train / validation / test).
+
+Surapprentissage (overfitting)
+    Quand un modèle apprend par cœur les exemples d'entraînement au lieu de
+    la règle générale : bon sur le train, mauvais sur des données nouvelles.
+
+--- T ---
+
+Terminal
+    Fenêtre où l'on tape des commandes (PowerShell sous Windows, Terminal sous
+    macOS).
+
+Test (jeu de)
+    Données mises de côté pour l'évaluation finale. Dans EMBER2024 : les 12
+    dernières semaines. Ne jamais s'en servir pour régler un modèle.
+
+thrember
+    Programme officiel des auteurs d'EMBER2024 qui calcule les features. Notre
+    fichier ember_features.py reproduit exactement sa vectorisation.
+
+Timestamp Unix
+    Façon de noter une date : le nombre de secondes écoulées depuis le
+    1er janvier 1970. Ex. 1696089632 = 30 septembre 2023.
+
+TLSH
+    Empreinte « de similarité » : deux fichiers proches ont des empreintes
+    TLSH proches (contrairement à SHA-256). Présente dans les lignes EMBER2024.
+
+Top-N
+    Les N premiers d'un classement. « Top 10 des familles » = les 10 familles
+    les plus fréquentes.
+
+tqdm
+    Bibliothèque Python qui affiche les barres de progression de nos scripts.
+
+Train (jeu d'entraînement)
+    Données sur lesquelles le modèle apprend. Dans EMBER2024 : les 52
+    premières semaines.
+
+Types de malwares (comportements)
+    Termes que vous croiserez dans les descriptions de familles :
+      virus             s'insère dans d'autres programmes pour se propager
+      ver (worm)        se propage tout seul d'ordinateur en ordinateur
+      cheval de Troie (trojan)
+                        se fait passer pour un programme légitime
+      porte dérobée (backdoor)
+                        donne un accès caché à l'ordinateur à distance
+      rançongiciel (ransomware)
+                        chiffre les fichiers et exige une rançon
+      logiciel espion / voleur (spyware, stealer)
+                        vole des informations (mots de passe...)
+      téléchargeur / dropper (downloader, dropper)
+                        installe d'autres malwares
+      mineur (coinminer)
+                        utilise l'ordinateur pour fabriquer de la cryptomonnaie
+      publiciel (adware)
+                        affiche des publicités non désirées
+      botnet            réseau d'ordinateurs infectés contrôlés à distance
+
+--- U ---
+
+URL
+    Adresse web, ex. https://exemple.com/page. Des URL dans un programme
+    peuvent révéler un serveur contacté.
+
+--- V ---
+
+Validation (jeu de)
+    Partie du train mise de côté pour comparer des modèles et choisir les
+    hyperparamètres, sans toucher au test.
+
+Variable
+    Nom donné à une valeur dans un programme (data, X_train...). En
+    statistique, synonyme de feature.
+
+Vecteur / vectorisation
+    Vecteur : liste de nombres (ici, 2568 nombres par fichier). Vectorisation :
+    transformation d'une ligne JSON en vecteur.
+
+venv (environnement virtuel)
+    Dossier (.venv) qui contient une installation de Python propre au projet,
+    avec ses bibliothèques, sans toucher au reste de l'ordinateur. On
+    « l'active » avant de travailler : « (.venv) » s'affiche alors au début de
+    la ligne du terminal.
+
+VirusTotal
+    Service en ligne (de Google) qui fait analyser un fichier par environ 70
+    antivirus. Les fichiers d'EMBER2024 y ont été envoyés.
+
+--- W ---
+
+Win32 / Win64
+    Programmes Windows pour processeurs 32 bits (Win32) ou 64 bits (Win64).
+    Nous utilisons les fichiers Win32.
+
+--- Z ---
+
+Zip
+    Format d'archive compressée. Voir Archive.
+
+
+================================================================================
+ PARTIE 10 - PROBLÈMES FRÉQUENTS
+================================================================================
+
+« No module named 'malware_family' »
+« Could not open requirements file »
+    Vous n'êtes pas dans le dossier du projet, ou votre copie n'est pas à
+    jour. Faites cd vers le dossier du projet, puis git pull sur la branche
+    Abou. La commande dir (Windows) ou ls (macOS) doit montrer malware_family
+    et requirements.txt.
+
+« python : commande introuvable » (macOS)
+    Utilisez python3, ou activez d'abord l'environnement :
+    source .venv/bin/activate
+
+« (.venv) » n'apparaît pas au début de la ligne
+    L'environnement n'est pas activé : .venv\Scripts\activate (Windows) ou
+    source .venv/bin/activate (macOS). À refaire dans chaque nouveau terminal.
+
+Windows : « l'exécution de scripts est désactivée sur ce système »
+    Autorisez les scripts pour votre compte, une fois pour toutes :
+    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+    puis relancez .venv\Scripts\activate
+
+« CERTIFICATE_VERIFY_FAILED » (macOS)
+    Python installé depuis python.org n'a pas encore ses certificats : ouvrez
+    Applications > Python 3.x et double-cliquez « Install Certificates.command ».
+
+« Impossible d'interroger Hugging Face »
+    Problème de réseau (réseau d'école, proxy...). Essayez une autre connexion,
+    ou téléchargez les archives avec votre navigateur (README, partie 4.2).
+
+MemoryError, ou ordinateur très lent
+    Les données ne tiennent pas en mémoire : relancez prepare avec un plafond
+    plus bas, par exemple --max-per-family 3000 (et un autre --out-dir).
+
+Les trois membres n'ont pas les mêmes chiffres
+    Vérifiez que vous avez lancé les mêmes commandes, avec les mêmes options,
+    et comparez vos fichiers dataset_info.json.
+
+
+================================================================================
+ PARTIE 11 - POUR ALLER PLUS LOIN (gratuit)
+================================================================================
+
+  - Tutoriel officiel de Python, en français :
+      https://docs.python.org/fr/3/tutorial/
+  - Guide de l'utilisateur de scikit-learn (modèles, métriques, importance) :
+      https://scikit-learn.org/stable/user_guide.html
+  - Livre « Pro Git », en français :
+      https://git-scm.com/book/fr/v2
+  - Cours courts et pratiques (Python, pandas, machine learning) :
+      https://www.kaggle.com/learn
+  - EMBER2024 (code et documentation) :
+      https://github.com/FutureComputing4AI/EMBER2024

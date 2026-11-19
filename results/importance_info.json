@@ -1,0 +1,50 @@
+{
+  "dataset": "C:\\ember2024\\processed\\Win32_top10",
+  "dataset_created": "2026-10-18T17:03:33+00:00",
+  "model": "C:\\Users\\abouc\\Documents\\Projet Cyber-securite semestre1\\models\\best_model.joblib",
+  "model_type": "HistGradientBoostingClassifier",
+  "n_test_rows": 30948,
+  "sampled": false,
+  "n_repeats": 5,
+  "top": 50,
+  "random_state": 42,
+  "scoring": "f1_macro",
+  "baseline_f1_macro": 0.9172758102628787,
+  "baseline_f1_per_family": {
+    "berbew": 0.997748085872992,
+    "cosmu": 0.9944298476090384,
+    "wacatac": 0.9561650446392664,
+    "sfone": 0.9606299212598425,
+    "upatre": 0.987171464330413,
+    "grandoreiro": 0.9090909090909091,
+    "glupteba": 0.9687131050767415,
+    "expiro": 0.9820616472966145,
+    "sinowal": 0.47619047619047616,
+    "flystudio": 0.9405576012624934
+  },
+  "agreement_with_predictions_test": 1.0,
+  "hash_index": true,
+  "confused_pairs": [
+    {
+      "famille_reelle": "expiro",
+      "famille_predite": "wacatac",
+      "n": 91
+    },
+    {
+      "famille_reelle": "glupteba",
+      "famille_predite": "wacatac",
+      "n": 65
+    },
+    {
+      "famille_reelle": "flystudio",
+      "famille_predite": "wacatac",
+      "n": 59
+    }
+  ],
+  "native_importance": "MDI de présélection",
+  "shap_per_family": 200,
+  "ablation": true,
+  "ablation_trees": null,
+  "duration_seconds": 2773.3,
+  "ablation_source": "ablation.csv calculé par Kenneth le 17/11 (scripts/importance.py avec la même correction des colonnes catégorielles, même modèle : prédictions identiques) ; relancée ici, l'ablation manque de mémoire"
+}

@@ -1,0 +1,27 @@
+# Données EMBER (plusieurs Go) : jamais dans git
+/data/
+
+# Modèles entraînés (.joblib) : régénérés avec le script de B, ou échangés hors de git
+/models/
+
+# Rapport assemblé par pandoc : on le régénère
+/rapport/rapport.*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Réglages des éditeurs (PyCharm, VS Code) : propres à chaque machine
+.idea/
+.vscode/
+
+# Données ou dépôts EMBER2024 copiés dans le projet par erreur : jamais dans git (plusieurs Go)
+/EMBER2024/
+/ember2024/
+
+# Notebooks de brouillon créés par Jupyter
+Untitled*.ipynb
