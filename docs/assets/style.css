@@ -98,18 +98,8 @@ h1, h2, h3 { letter-spacing: -0.02em; margin: 0; font-weight: 600; }
 .cta { display: flex; gap: 14px; flex-wrap: wrap; animation: rise .9s .5s both; }
 @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
 
-/* Tourbillon (assets/vortex.js) : un canvas fixe derrière toute la page */
-#vortex, #orbit3d { position: fixed; inset: 0; z-index: 0; pointer-events: none; transition: opacity .2s linear; }
-/* Viseur qui suit la planète de l'orbite 3D (assets/orbit3d.js) */
-.orbit-target { position: fixed; left: 0; top: 0; z-index: 1; pointer-events: none; opacity: 0; }
-.orbit-target .spin { position: absolute; inset: 0; animation: spin 9s linear infinite; }
-.orbit-target i { position: absolute; width: 22%; height: 22%; min-width: 8px; min-height: 8px;
-  border: 2px solid rgba(255, 255, 255, .85); }
-.orbit-target i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; }
-.orbit-target i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; }
-.orbit-target i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; }
-.orbit-target i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Fond 3D (assets/scene.js) : un canvas fixe derrière toute la page */
+#scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; transition: opacity .2s linear; }
 .nav, main, .footer, .notice { position: relative; z-index: 2; }
 .nav { position: fixed; }
 
@@ -141,7 +131,6 @@ h1, h2, h3 { letter-spacing: -0.02em; margin: 0; font-weight: 600; }
 .eyebrow { color: var(--muted); font-size: 14px; font-weight: 600; margin: 0 0 10px; }
 .section h2 { font-size: clamp(30px, 4vw, 48px); line-height: 1.1; }
 .sub { color: var(--muted); max-width: 720px; margin: 14px 0 34px; font-size: 17px; }
-.section h2, .section .sub, .section .eyebrow, .hero h1, .hero .lead { text-shadow: 0 2px 22px rgba(0, 0, 0, .95), 0 0 2px rgba(0, 0, 0, .8); }
 .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s ease, transform .8s cubic-bezier(.2, .7, .2, 1); }
 .reveal.visible { opacity: 1; transform: none; }
 
